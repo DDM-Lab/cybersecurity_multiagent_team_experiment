@@ -71,22 +71,32 @@ elif st.session_state.page == "trial":
     st.subheader("Network Event Log (IDS Output)")
     st.dataframe(pd.DataFrame(trial["ids_events"]), use_container_width=True)
 
-    st.subheader("LLM Teammate Chat")
-    for msg in st.session_state.chat_history:
-        role = "assistant" if msg["role"] == "llm" else "user"
-        with st.chat_message(role):
-            st.markdown(msg["message"])
+    assessment_column, chat_column = st.columns(2, gap="large")
 
-    user_message = st.chat_input("Ask your LLM teammate a question...")
-    if user_message:
-        st.session_state.chat_history.append(
-            {"role": "human", "message": user_message, "timestamp": now()}
-        )
-        reply = get_dummy_llm_reply(trial, user_message)
-        st.session_state.chat_history.append(
-            {"role": "llm", "message": reply, "timestamp": now()}
-        )
-        st.rerun()
+    with assessment_column:
+        st.subheader("LLM Teammate Assessment")
+        st.markdown(st.session_state.chat_history[0]["message"])
+
+    with chat_column:
+        st.subheader("LLM Teammate Chat")
+        with st.container(height=450):
+            for msg in st.session_state.chat_history[1:]:
+                role = "assistant" if msg["role"] == "llm" else "user"
+                author = "LLM Teammate" if msg["role"] == "llm" else "You"
+                with st.chat_message(role):
+                    st.caption(f"{author} | {msg['timestamp']}")
+                    st.markdown(msg["message"])
+
+        user_message = st.chat_input("Ask your LLM teammate a question...")
+        if user_message:
+            st.session_state.chat_history.append(
+                {"role": "human", "message": user_message, "timestamp": now()}
+            )
+            reply = get_dummy_llm_reply(trial, user_message)
+            st.session_state.chat_history.append(
+                {"role": "llm", "message": reply, "timestamp": now()}
+            )
+            st.rerun()
 
     st.subheader("Your Assessment")
     attack_detected = st.radio("Is there an ongoing cyberattack?", ["Yes", "No"], index=None)
