@@ -5,10 +5,12 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
+from decision import aggregate_decision, calculate_team_performance
 from utils import (
+    get_dummy_llm_reply,
+    get_next_condition,
     load_settings,
     load_trial,
-    get_dummy_llm_reply,
     save_answers_csv,
     save_chat_csv,
 )
@@ -21,8 +23,10 @@ trial = load_trial(settings["trial_order"][0])
 if "page" not in st.session_state:
     st.session_state.page = "consent"
     st.session_state.participant_id = ""
+    st.session_state.condition = None
     st.session_state.chat_history = []
     st.session_state.timestamp_start = None
+    st.session_state.submission_summary = None
 
 
 def now():
@@ -54,6 +58,7 @@ if st.session_state.page == "consent":
             st.error("You must consent to participate before continuing.")
         else:
             st.session_state.participant_id = participant_id.strip()
+            st.session_state.condition = get_next_condition()
             st.session_state.timestamp_start = now()
             st.session_state.chat_history = [
                 {
@@ -111,15 +116,40 @@ elif st.session_state.page == "trial":
         elif attack_detected == "Yes" and not attack_type.strip():
             st.error("Please describe the suspected attack type.")
         else:
+            llm_assessment = trial["llm_initial_assessment"]
+            llm_attack_detected = "Yes" if llm_assessment["attack_detected"] else "No"
+            llm_attack_type = llm_assessment.get("attack_type", "")
+            llm_confidence = llm_assessment.get("confidence", 0)
+
+            correct_attack_detected = trial.get("attack_detected_correct_response", "Yes")
+            correct_attack_type = trial.get("attack_type_correct_response", "")
+
+            # Decision calculation based on condition
+            agg_result = aggregate_decision(
+                condition=st.session_state.condition,
+                human_decision=attack_detected,
+                human_confidence=confidence,
+                llm_decision=llm_attack_detected,
+                llm_confidence=llm_confidence,
+            )
+            team_decision = agg_result["team_decision"]
+            team_perf = calculate_team_performance(team_decision, correct_attack_detected)
+
             record = {
                 "participant_id": st.session_state.participant_id,
                 "trial_number": trial["trial_number"],
-                "condition": settings["condition"],
+                "condition": st.session_state.condition,
                 "timestamp_start": st.session_state.timestamp_start,
                 "timestamp_submit": now(),
                 "attack_detected": attack_detected,
                 "attack_type": attack_type.strip(),
                 "confidence": confidence,
+                "attack_detected_llm_response": llm_attack_detected,
+                "attack_type_llm_response": llm_attack_type,
+                "confidence_llm": llm_confidence,
+                "attack_detected_correct_response": correct_attack_detected,
+                "attack_type_correct_response": correct_attack_type,
+                "team_performance": team_perf,
             }
             answers_path = save_answers_csv(
                 st.session_state.participant_id, trial["trial_number"], record
@@ -129,6 +159,17 @@ elif st.session_state.page == "trial":
             )
             st.session_state.answers_path = answers_path
             st.session_state.chat_path = chat_path
+            st.session_state.submission_summary = {
+                "condition": st.session_state.condition,
+                "human_decision": attack_detected,
+                "human_confidence": confidence,
+                "llm_decision": llm_attack_detected,
+                "llm_confidence": llm_confidence,
+                "team_decision": team_decision,
+                "correct_decision": correct_attack_detected,
+                "team_performance": team_perf,
+                "chosen_source": agg_result["chosen_source"],
+            }
             st.session_state.page = "done"
             st.rerun()
 
@@ -136,5 +177,30 @@ elif st.session_state.page == "trial":
 elif st.session_state.page == "done":
     st.title(settings["experiment_name"])
     st.success("Trial completed. Your responses have been saved.")
+
+    summary = st.session_state.get("submission_summary")
+    if summary:
+        st.subheader("Team Performance Feedback")
+        score_text = "Correct" if summary["team_performance"] == 1 else "Incorrect"
+        score_color = "green" if summary["team_performance"] == 1 else "red"
+
+        if summary["condition"] == "leader":
+            st.markdown(
+                f"**Team Decision Mechanism:** As the team leader, your judgment determined the final team decision.\n\n"
+                f"- **Your Decision:** Attack Detected = **{summary['human_decision']}**\n"
+                f"- **Ground Truth:** Attack Detected = **{summary['correct_decision']}**\n"
+                f"- **Final Team Performance Score:** :{score_color}[**{score_text} ({summary['team_performance']}/1)**]"
+            )
+        else:
+            st.markdown(
+                f"**Team Decision Mechanism:** The team decision was formed by jointly combining your judgment "
+                f"and your AI teammate's judgment, weighted by each party's confidence rating.\n\n"
+                f"- **Your Assessment:** Attack Detected = **{summary['human_decision']}** (Confidence: {summary['human_confidence']}%)\n"
+                f"- **AI Teammate Assessment:** Attack Detected = **{summary['llm_decision']}** (Confidence: {summary['llm_confidence']}%)\n"
+                f"- **Joint Team Decision:** Attack Detected = **{summary['team_decision']}**\n"
+                f"- **Ground Truth:** Attack Detected = **{summary['correct_decision']}**\n"
+                f"- **Final Team Performance Score:** :{score_color}[**{score_text} ({summary['team_performance']}/1)**]"
+            )
+
     st.write(f"Answers saved to: `{st.session_state.answers_path}`")
     st.write(f"Chat log saved to: `{st.session_state.chat_path}`")

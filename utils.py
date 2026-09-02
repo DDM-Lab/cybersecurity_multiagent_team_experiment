@@ -5,6 +5,7 @@ import os
 
 CONFIG_DIR = os.path.join(os.path.dirname(__file__), "config")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+TRACKER_FILE = os.path.join(DATA_DIR, "assignment_tracker.json")
 
 
 def load_json(path):
@@ -20,41 +21,74 @@ def load_trial(trial_id):
     return load_json(os.path.join(CONFIG_DIR, f"{trial_id}.json"))
 
 
+def get_next_condition():
+    """Determine the condition for the next incoming participant.
+
+    Alternates between 'leader' and 'pool' based on the recorded count in
+    data/assignment_tracker.json.
+    """
+    os.makedirs(DATA_DIR, exist_ok=True)
+    tracker = {"total_participants": 0, "last_condition": None}
+    if os.path.exists(TRACKER_FILE):
+        try:
+            tracker = load_json(TRACKER_FILE)
+        except Exception:
+            pass
+
+    last_condition = tracker.get("last_condition")
+    next_condition = "pool" if last_condition == "leader" else "leader"
+    tracker["last_condition"] = next_condition
+    tracker["total_participants"] = tracker.get("total_participants", 0) + 1
+
+    with open(TRACKER_FILE, "w", encoding="utf-8") as f:
+        json.dump(tracker, f, indent=2)
+
+    return next_condition
+
+
 def get_dummy_llm_reply(trial_config, user_message):
     # Placeholder for a future real LLM API call; signature already accepts the user message.
     return trial_config["llm_dummy_reply"]
 
 
-def ensure_participant_dir(participant_id):
-    participant_dir = os.path.join(DATA_DIR, participant_id)
-    os.makedirs(participant_dir, exist_ok=True)
-    return participant_dir
+def _read_existing_rows(path):
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _write_rows(path, fieldnames, rows):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def save_answers_csv(participant_id, trial_number, record):
-    participant_dir = ensure_participant_dir(participant_id)
-    path = os.path.join(participant_dir, f"trial_{trial_number}_answers.csv")
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(record.keys()))
-        writer.writeheader()
-        writer.writerow(record)
+    """Append/replace one trial's answer row in the participant's single answers CSV."""
+    path = os.path.join(DATA_DIR, f"{participant_id}_answers.csv")
+    fieldnames = list(record.keys())
+    rows = [r for r in _read_existing_rows(path) if str(r.get("trial_number")) != str(trial_number)]
+    rows.append(record)
+    _write_rows(path, fieldnames, rows)
     return path
 
 
 def save_chat_csv(participant_id, trial_number, chat_history):
-    participant_dir = ensure_participant_dir(participant_id)
-    path = os.path.join(participant_dir, f"trial_{trial_number}_chat.csv")
+    """Append/replace one trial's chat messages in the participant's single chat CSV."""
+    path = os.path.join(DATA_DIR, f"{participant_id}_chat.csv")
     fieldnames = ["participant_id", "trial_number", "message_index", "role", "message", "timestamp"]
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for i, msg in enumerate(chat_history):
-            writer.writerow({
-                "participant_id": participant_id,
-                "trial_number": trial_number,
-                "message_index": i,
-                "role": msg["role"],
-                "message": msg["message"],
-                "timestamp": msg["timestamp"],
-            })
+    rows = [r for r in _read_existing_rows(path) if str(r.get("trial_number")) != str(trial_number)]
+    for i, msg in enumerate(chat_history):
+        rows.append({
+            "participant_id": participant_id,
+            "trial_number": trial_number,
+            "message_index": i,
+            "role": msg["role"],
+            "message": msg["message"],
+            "timestamp": msg["timestamp"],
+        })
+    _write_rows(path, fieldnames, rows)
     return path
