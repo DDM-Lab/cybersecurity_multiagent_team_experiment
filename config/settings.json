@@ -1,0 +1,6 @@
+{
+  "experiment_name": "IDS Evaluation Task with Multi-agent teams",
+  "condition": "condition_A",
+  "trial_order": ["trial_1"],
+  "prolific_id": null
+}

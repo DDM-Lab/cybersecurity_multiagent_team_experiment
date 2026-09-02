@@ -1,0 +1,27 @@
+{
+  "trial_id": "trial_1",
+  "trial_number": 1,
+  "ids_events": [
+    {"timestamp": "2026-09-02 14:02:01", "source_ip": "10.0.0.15", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 80, "packet_count": 12, "ml_classification": "benign"},
+    {"timestamp": "2026-09-02 14:02:03", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 21, "packet_count": 3, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:04", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 22, "packet_count": 2, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:04", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 23, "packet_count": 2, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:05", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 25, "packet_count": 1, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:05", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 80, "packet_count": 2, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:06", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 110, "packet_count": 1, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:06", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 143, "packet_count": 1, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:07", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 443, "packet_count": 2, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:07", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 445, "packet_count": 1, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:08", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 3389, "packet_count": 2, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:09", "source_ip": "10.0.0.22", "destination_ip": "192.168.1.12", "protocol": "UDP", "destination_port": 53, "packet_count": 4, "ml_classification": "benign"},
+    {"timestamp": "2026-09-02 14:02:10", "source_ip": "203.0.113.44", "destination_ip": "192.168.1.10", "protocol": "TCP", "destination_port": 8080, "packet_count": 1, "ml_classification": "malicious"},
+    {"timestamp": "2026-09-02 14:02:12", "source_ip": "10.0.0.31", "destination_ip": "192.168.1.20", "protocol": "TCP", "destination_port": 443, "packet_count": 9, "ml_classification": "benign"}
+  ],
+  "llm_initial_assessment": {
+    "attack_detected": true,
+    "attack_type": "Port scan",
+    "confidence": 82,
+    "explanation": "A single source IP (203.0.113.44) generated low-volume connections to many distinct destination ports in rapid succession, a pattern typical of port scanning reconnaissance. Most of these events were flagged malicious by the ML model."
+  },
+  "llm_dummy_reply": "I'm a placeholder teammate for now, so I can't analyze new details yet. Based on the table, the repeated single-packet connections from 203.0.113.44 across many ports still look like a port scan to me."
+}
