@@ -6,6 +6,14 @@ scores based on experimental conditions (leader vs pool).
 import random
 
 
+def round_probability_to_decision(probability):
+    """Round an attack-probability score (0-100) to a binary decision.
+
+    Rule: > 50 -> 'Yes', <= 50 -> 'No'.
+    """
+    return "Yes" if probability > 50 else "No"
+
+
 def normalize_binary_choice(value):
     """Normalize boolean or string binary values to 'Yes' or 'No'."""
     if isinstance(value, bool):

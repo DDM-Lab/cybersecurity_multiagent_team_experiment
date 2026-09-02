@@ -18,7 +18,7 @@
     {"timestamp": "2026-09-02 14:02:12", "source_ip": "10.0.0.31", "destination_ip": "192.168.1.20", "protocol": "TCP", "destination_port": 443, "packet_count": 9, "ml_classification": "benign"}
   ],
   "llm_initial_assessment": {
-    "attack_detected": true,
+    "attack_probability": 88,
     "attack_type": "Port scan",
     "confidence": 82,
     "explanation": "A single source IP (203.0.113.44) generated low-volume connections to many distinct destination ports in rapid succession, a pattern typical of port scanning reconnaissance. Most of these events were flagged malicious by the ML model."

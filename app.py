@@ -5,7 +5,11 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from decision import aggregate_decision, calculate_team_performance
+from decision import (
+    aggregate_decision,
+    calculate_team_performance,
+    round_probability_to_decision,
+)
 from utils import (
     get_dummy_llm_reply,
     get_next_condition,
@@ -36,7 +40,7 @@ def now():
 def format_initial_assessment(assessment):
     return (
         f"**Initial assessment**\n\n"
-        f"- Ongoing attack detected: {'Yes' if assessment['attack_detected'] else 'No'}\n"
+        f"- Ongoing attack probability: {assessment['attack_probability']}/100\n"
         f"- Suspected attack type: {assessment['attack_type']}\n"
         f"- Confidence: {assessment['confidence']}/100\n\n"
         f"{assessment['explanation']}"
@@ -104,20 +108,26 @@ elif st.session_state.page == "trial":
             st.rerun()
 
     st.subheader("Your Assessment")
-    attack_detected = st.radio("Is there an ongoing cyberattack?", ["Yes", "No"], index=None)
-    attack_type = ""
-    if attack_detected == "Yes":
-        attack_type = st.text_input("If yes, what type of attack?")
+    attack_probability = st.slider(
+        "What is the probability that there is an ongoing cyberattack?", 1, 100, 50
+    )
+    attack_type = st.selectbox(
+        "What type of attack do you suspect?",
+        settings["attack_type_options"],
+        index=None,
+        placeholder="Select an attack type...",
+    )
     confidence = st.slider("How confident are you?", 1, 100, 50)
 
     if st.button("Submit"):
-        if attack_detected is None:
-            st.error("Please answer whether there is an ongoing cyberattack.")
-        elif attack_detected == "Yes" and not attack_type.strip():
-            st.error("Please describe the suspected attack type.")
+        if attack_type is None:
+            st.error("Please select a suspected attack type.")
         else:
+            attack_detected = round_probability_to_decision(attack_probability)
+
             llm_assessment = trial["llm_initial_assessment"]
-            llm_attack_detected = "Yes" if llm_assessment["attack_detected"] else "No"
+            llm_attack_probability = llm_assessment["attack_probability"]
+            llm_attack_detected = round_probability_to_decision(llm_attack_probability)
             llm_attack_type = llm_assessment.get("attack_type", "")
             llm_confidence = llm_assessment.get("confidence", 0)
 
@@ -141,9 +151,11 @@ elif st.session_state.page == "trial":
                 "condition": st.session_state.condition,
                 "timestamp_start": st.session_state.timestamp_start,
                 "timestamp_submit": now(),
+                "attack_probability": attack_probability,
                 "attack_detected": attack_detected,
-                "attack_type": attack_type.strip(),
+                "attack_type": attack_type,
                 "confidence": confidence,
+                "attack_probability_llm_response": llm_attack_probability,
                 "attack_detected_llm_response": llm_attack_detected,
                 "attack_type_llm_response": llm_attack_type,
                 "confidence_llm": llm_confidence,
