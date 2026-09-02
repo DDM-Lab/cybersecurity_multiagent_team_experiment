@@ -19,11 +19,11 @@
   ],
   "llm_initial_assessment": {
     "attack_probability": 88,
-    "attack_type": "Port scan",
+    "attack_type": "Recon",
     "confidence": 82,
     "explanation": "A single source IP (203.0.113.44) generated low-volume connections to many distinct destination ports in rapid succession, a pattern typical of port scanning reconnaissance. Most of these events were flagged malicious by the ML model."
   },
   "attack_detected_correct_response": "Yes",
-  "attack_type_correct_response": "Port scan",
-  "llm_dummy_reply": "I'm a placeholder teammate for now, so I can't analyze new details yet. Based on the table, the repeated single-packet connections from 203.0.113.44 across many ports still look like a port scan to me."
+  "attack_type_correct_response": "Recon",
+  "llm_dummy_reply": "I'm a placeholder teammate for now, so I can't analyze new details yet. Based on the table, the repeated single-packet connections from 203.0.113.44 across many ports still look like a port scan (recon) to me."
 }

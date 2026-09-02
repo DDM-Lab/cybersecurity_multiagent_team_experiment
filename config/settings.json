@@ -4,12 +4,11 @@
   "trial_order": ["trial_1"],
   "prolific_id": null,
   "attack_type_options": [
-    "Port scan",
-    "Brute force",
-    "DDoS",
-    "Malware / ransomware",
-    "Phishing",
-    "Data exfiltration",
+    "Recon",
+    "Exfiltration",
+    "C&C beaconing",
+    "DoS",
+    "Credential harvesting",
     "None / No attack",
     "Other"
   ]
