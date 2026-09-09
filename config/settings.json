@@ -3,6 +3,8 @@
   "condition": "condition_A",
   "trial_order": ["trial_1"],
   "prolific_id": null,
+  "ids_table_default_rows": 4,
+  "ids_table_rows_increment": 2,
   "attack_type_options": [
     "Recon",
     "Exfiltration",

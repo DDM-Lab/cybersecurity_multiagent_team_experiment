@@ -33,6 +33,8 @@ streamlit run app.py
 - `config/trial_1.json` — Dummy trial data: IDS events, LLM assessment/reply, and ground truth correct responses.
 - `data/{participant_id}_answers.csv` and `data/{participant_id}_chat.csv` — CSV data storage per participant. Answers CSV contains condition, human responses, LLM responses, ground truth, and team performance.
 
+The IDS table initially shows `ids_table_default_rows` rows. Participants can reveal more rows with the button; each click adds `ids_table_rows_increment` rows until the full table is visible. The answers CSV records the final visible row count and number of reveals. These settings are experimenter-controlled in `config/settings.json` and must reach the full table evenly.
+
 **Not yet implemented:** real LLM API calls, multiple/randomized trials, additional experimental conditions, Prolific ID capture, authentication.
 
 ## For the coding agent: how to run/test

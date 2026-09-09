@@ -25,6 +25,18 @@ st.set_page_config(page_title="IDS Evaluation Task", layout="wide")
 settings = load_settings()
 trial = load_trial(settings["trial_order"][0])
 attack_type_options = settings["attack_type_options"]
+ids_total_rows = len(trial["ids_events"])
+ids_default_rows = settings["ids_table_default_rows"]
+ids_rows_increment = settings["ids_table_rows_increment"]
+
+if not isinstance(ids_default_rows, int) or not isinstance(ids_rows_increment, int):
+    raise ValueError("IDS table row settings must be integers.")
+if not 1 <= ids_default_rows <= ids_total_rows:
+    raise ValueError("ids_table_default_rows must be between 1 and the total IDS rows.")
+if ids_rows_increment <= 0 or (ids_total_rows - ids_default_rows) % ids_rows_increment != 0:
+    raise ValueError(
+        "ids_table_rows_increment must evenly reach the total rows from the default."
+    )
 
 if "page" not in st.session_state:
     st.session_state.page = "consent"
@@ -35,6 +47,8 @@ if "page" not in st.session_state:
     st.session_state.timestamp_pre_submit = None
     st.session_state.pre_answers = None
     st.session_state.submission_summary = None
+    st.session_state.ids_rows_visible = ids_default_rows
+    st.session_state.ids_rows_revealed = 0
 
 
 def now():
@@ -47,6 +61,24 @@ def match_color(is_match):
 
 def colored_line(text, is_match):
     return f'<span style="color:{match_color(is_match)};font-weight:bold;">{text}</span>'
+
+
+def render_ids_table():
+    visible_rows = st.session_state.ids_rows_visible
+    st.dataframe(
+        pd.DataFrame(trial["ids_events"][:visible_rows]),
+        use_container_width=True,
+    )
+
+    if visible_rows < ids_total_rows:
+        rows_to_reveal = min(ids_rows_increment, ids_total_rows - visible_rows)
+        if st.button(
+            f"Show {rows_to_reveal} more rows",
+            key="show_more_ids_rows",
+        ):
+            st.session_state.ids_rows_visible += rows_to_reveal
+            st.session_state.ids_rows_revealed += 1
+            st.rerun()
 
 
 # ---------------------------------------------------------------- consent page
@@ -74,7 +106,7 @@ if st.session_state.page == "consent":
 elif st.session_state.page == "trial_initial":
     st.title(settings["experiment_name"])
     st.subheader("Network Event Log (IDS Output)")
-    st.dataframe(pd.DataFrame(trial["ids_events"]), use_container_width=True)
+    render_ids_table()
 
     st.subheader("Your Independent Assessment")
     st.caption("Please form your own judgment before seeing your AI teammate's assessment.")
@@ -108,7 +140,7 @@ elif st.session_state.page == "trial_initial":
 elif st.session_state.page == "trial_discuss":
     st.title(settings["experiment_name"])
     st.subheader("Network Event Log (IDS Output)")
-    st.dataframe(pd.DataFrame(trial["ids_events"]), use_container_width=True)
+    render_ids_table()
 
     pre = st.session_state.pre_answers
     llm_assessment = trial["llm_initial_assessment"]
@@ -246,6 +278,8 @@ elif st.session_state.page == "trial_discuss":
             "llm_attack_detected_post": llm_decision_post,
             "attack_detected_correct_response": correct_attack_detected,
             "attack_type_correct_response": correct_attack_type,
+            "ids_rows_visible": st.session_state.ids_rows_visible,
+            "ids_rows_revealed": st.session_state.ids_rows_revealed,
             "team_performance": team_perf,
         }
         answers_path = save_answers_csv(
