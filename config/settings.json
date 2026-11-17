@@ -16,7 +16,7 @@
   "ids_table_default_rows": 10,
   "ids_table_rows_increment": 10,
   "attack_type_options": [
-    "No attack",
+    "None",
     "DoS",
     "Evasion",
     "Exfiltration",
@@ -24,8 +24,7 @@
     "Recon",
     "DVWA",
     "C&C beaconing",
-    "Credential harvesting",
-    "Other"
+    "Credential harvesting"
   ],
   "trials": {
     "dos": {
@@ -59,17 +58,17 @@
       "attack_present": true
     },
     "benign_1": {
-      "attack_type": "No attack",
+      "attack_type": "None",
       "csv": "benign/slice-benign-office-1.csv",
       "attack_present": false
     },
     "benign_2": {
-      "attack_type": "No attack",
+      "attack_type": "None",
       "csv": "benign/slice-benign-office-2.csv",
       "attack_present": false
     },
     "benign_3": {
-      "attack_type": "No attack",
+      "attack_type": "None",
       "csv": "benign/slice-benign-office-3.csv",
       "attack_present": false
     }

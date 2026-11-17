@@ -97,3 +97,61 @@ def calculate_team_performance(team_decision, correct_response):
     correct_norm = normalize_binary_choice(correct_response)
 
     return 1 if team_norm == correct_norm else 0
+
+
+ATTACK_CATEGORIES = (
+    "None", "DoS", "Evasion", "Exfiltration", "SMB", "Recon", "DVWA",
+    "C&C beaconing", "Credential harvesting",
+)
+
+
+def aggregate_assessment(condition, human_decision, human_category, human_detection_confidence,
+                         llm_decision, llm_category, llm_detection_confidence,
+                         human_category_confidence, llm_category_confidence):
+    """Equal coefficients with task-specific confidence; scores are uncalibrated.
+
+    One fair teammate draw resolves all tied disagreements in an episode.
+    Call once at final submission and save the result.
+    """
+    if condition not in ("leader", "pool"):
+        raise ValueError("Unknown condition")
+    if human_decision not in ("Yes", "No") or llm_decision not in ("Yes", "No"):
+        raise ValueError("Detection answers must be Yes or No")
+    if human_category not in ATTACK_CATEGORIES or llm_category not in ATTACK_CATEGORIES:
+        raise ValueError("Unknown attack category")
+    if not all(1 <= c <= 100 for c in (human_detection_confidence, llm_detection_confidence,
+                                      human_category_confidence, llm_category_confidence)):
+        raise ValueError("Confidence must be between 1 and 100")
+    hd, ld = human_detection_confidence / 100, llm_detection_confidence / 100
+    hc, lc = human_category_confidence / 100, llm_category_confidence / 100
+    evidence = 0.5 * hd * (1 if human_decision == "Yes" else -1) + 0.5 * ld * (1 if llm_decision == "Yes" else -1)
+    support = {category: 0.5 * hc * (human_category == category) +
+               0.5 * lc * (llm_category == category) for category in ATTACK_CATEGORIES}
+    detection_tie = condition == "pool" and human_decision != llm_decision and hd == ld
+    category_tie = condition == "pool" and human_category != llm_category and hc == lc
+    tie_source = random.choice(["human", "llm"]) if detection_tie or category_tie else None
+
+    def source(human_answer, llm_answer, human_confidence, llm_confidence, tied):
+        if condition == "leader":
+            return "human"
+        if human_answer == llm_answer:
+            return "agreement"
+        if tied:
+            return tie_source
+        return "human" if human_confidence > llm_confidence else "llm"
+
+    detection_source = source(human_decision, llm_decision, hd, ld, detection_tie)
+    category_source = source(human_category, llm_category, hc, lc, category_tie)
+    return {
+        "team_decision": llm_decision if detection_source == "llm" else human_decision,
+        "team_attack_type": llm_category if category_source == "llm" else human_category,
+        "team_detection_source": detection_source,
+        "team_category_source": category_source,
+        "team_tie_selected_source": tie_source or "",
+        "team_detection_tie_break": detection_tie,
+        "team_category_tie_break": category_tie,
+        "pool_human_coefficient": 0.5,
+        "pool_llm_coefficient": 0.5,
+        "pool_detection_evidence": evidence,
+        "pool_category_support": support,
+    }

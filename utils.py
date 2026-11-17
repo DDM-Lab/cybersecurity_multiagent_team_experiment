@@ -52,11 +52,12 @@ def create_trial_plan(settings):
         config = settings["trials"][trial_id]
         correct = trial_id in correct_trials
         predicts_attack = config["attack_present"] if correct else not config["attack_present"]
-        predicted_type = (config["attack_type"] if correct else random.choice(attack_types)) if predicts_attack else "No attack"
+        predicted_type = (config["attack_type"] if correct else random.choice(attack_types)) if predicts_attack else "None"
         assessments[trial_id] = {
-            "attack_probability": 85 if predicts_attack else 30,
+            "attack_detected": "Yes" if predicts_attack else "No",
             "attack_type": predicted_type,
-            "confidence": 80,
+            "detection_confidence": 80,
+            "category_confidence": 80,
             "explanation": (
                 f"Considering the full event log, I suspect {predicted_type}. "
                 "The pattern of network activity suggests an ongoing attack."

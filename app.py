@@ -2,15 +2,15 @@
 judgment, then discusses with a dummy LLM teammate before finalizing.
 Flow: consent -> (trial_initial -> trial_discuss -> feedback) x 9 -> done."""
 from datetime import datetime
+import json
 from html import escape
 
 import pandas as pd
 import streamlit as st
 
 from decision import (
-    aggregate_decision,
+    aggregate_assessment,
     calculate_team_performance,
-    round_probability_to_decision,
 )
 from utils import (
     create_trial_plan,
@@ -113,31 +113,42 @@ elif st.session_state.page == "trial_initial":
 
     st.subheader("Your Independent Assessment")
     st.caption("Please form your own judgment before seeing your AI teammate's assessment.")
-    attack_probability = st.slider(
-        "What is the probability that there is an ongoing cyberattack?",
-        1, 100, 50, key="initial_attack_probability",
+    attack_detected = st.selectbox(
+        "Is there an ongoing cyberattack?", ["Yes", "No"],
+        index=None, key="initial_attack_detected",
     )
-    attack_type = st.selectbox(
-        "What type of attack do you suspect?",
-        attack_type_options,
-        index=None,
-        placeholder="Select an attack type...",
-        key="initial_attack_type",
+    detection_confidence = st.slider(
+        "How confident are you about whether an attack is ongoing?", 1, 100, 50,
+        key="initial_detection_confidence",
+        help="1 = least confident; 100 = most confident.",
     )
-    attack_type_other = ""
-    if attack_type == "Other":
-        attack_type_other = st.text_input("Please specify the attack type", key="initial_other")
-    confidence = st.slider("How confident are you?", 1, 100, 50, key="initial_confidence")
+    attack_type = "None"
+    if attack_detected == "Yes":
+        attack_type = st.selectbox(
+            "What type of attack do you suspect?",
+            [category for category in attack_type_options if category != "None"],
+            index=None,
+            placeholder="Select an attack type...",
+            key="initial_attack_type",
+        )
+
+    category_confidence = detection_confidence
+    if attack_detected == "Yes":
+        category_confidence = st.slider(
+            "How confident are you in the attack category?", 1, 100, 50,
+            key="initial_category_confidence",
+            help="1 = least confident; 100 = most confident.",
+        )
 
     if st.button("Submit Initial Assessment"):
-        if attack_type is None or (attack_type == "Other" and not attack_type_other.strip()):
-            st.error("Please select a suspected attack type.")
+        if attack_type is None or attack_detected is None:
+            st.error("Please answer both questions.")
         else:
             st.session_state.pre_answers = {
-                "attack_probability": attack_probability,
+                "attack_detected": attack_detected,
                 "attack_type": attack_type,
-                "attack_type_other": attack_type_other.strip(),
-                "confidence": confidence,
+                "detection_confidence": detection_confidence,
+                "category_confidence": category_confidence,
             }
             st.session_state.timestamp_pre_submit = now()
             st.session_state.page = "trial_discuss"
@@ -151,12 +162,13 @@ elif st.session_state.page == "trial_discuss":
 
     pre = st.session_state.pre_answers
     llm_assessment = trial["llm_initial_assessment"]
-    human_decision_pre = round_probability_to_decision(pre["attack_probability"])
-    llm_decision_pre = round_probability_to_decision(llm_assessment["attack_probability"])
+    human_decision_pre = pre["attack_detected"]
+    llm_decision_pre = llm_assessment["attack_detected"]
 
     decision_match = human_decision_pre == llm_decision_pre
     type_match = pre["attack_type"] == llm_assessment["attack_type"]
-    confidence_match = pre["confidence"] == llm_assessment["confidence"]
+    confidence_match = pre["detection_confidence"] == llm_assessment["detection_confidence"]
+    category_confidence_match = pre["category_confidence"] == llm_assessment["category_confidence"]
 
     st.subheader("Compare Assessments")
     human_column, llm_column = st.columns(2, gap="large")
@@ -166,9 +178,10 @@ elif st.session_state.page == "trial_discuss":
             f"""
 <div style="background-color:#eaf7ea;border:1px solid #2e7d32;border-radius:8px;padding:14px;">
 <b>Your Initial Assessment</b><br>
-{colored_line(f"Attack probability: {pre['attack_probability']}/100", decision_match)}<br>
+{colored_line(f"Ongoing attack: {pre['attack_detected']}", decision_match)}<br>
 {colored_line(f"Suspected attack type: {pre['attack_type']}", type_match)}<br>
-{colored_line(f"Confidence: {pre['confidence']}/100", confidence_match)}
+{colored_line(f"Detection confidence: {pre['detection_confidence']}/100", confidence_match)}<br>
+{colored_line(f"Category confidence: {pre['category_confidence']}/100", category_confidence_match)}
 </div>
 """,
             unsafe_allow_html=True,
@@ -179,9 +192,10 @@ elif st.session_state.page == "trial_discuss":
             f"""
 <div style="background-color:#e8f0fe;border:1px solid #1a73e8;border-radius:8px;padding:14px;">
 <b>LLM Teammate Assessment</b><br>
-{colored_line(f"Attack probability: {llm_assessment['attack_probability']}/100", decision_match)}<br>
+{colored_line(f"Ongoing attack: {llm_assessment['attack_detected']}", decision_match)}<br>
 {colored_line(f"Suspected attack type: {llm_assessment['attack_type']}", type_match)}<br>
-{colored_line(f"Confidence: {llm_assessment['confidence']}/100", confidence_match)}<br>
+{colored_line(f"Detection confidence: {llm_assessment['detection_confidence']}/100", confidence_match)}<br>
+{colored_line(f"Category confidence: {llm_assessment['category_confidence']}/100", category_confidence_match)}<br>
 {llm_assessment['explanation']}
 </div>
 """,
@@ -214,50 +228,60 @@ elif st.session_state.page == "trial_discuss":
 
     st.subheader("Finalize Your Assessment")
     st.caption("Feel free to revise your answers after discussing with your AI teammate.")
-    attack_probability_post = st.slider(
-        "What is the probability that there is an ongoing cyberattack?",
-        1, 100, pre["attack_probability"], key="post_attack_probability",
+    attack_detected_post = st.selectbox(
+        "Is there an ongoing cyberattack?", ["Yes", "No"],
+        index=["Yes", "No"].index(pre["attack_detected"]), key="post_attack_detected",
     )
-    attack_type_post = st.selectbox(
-        "What type of attack do you suspect?",
-        attack_type_options,
-        index=attack_type_options.index(pre["attack_type"]),
-        key="post_attack_type",
+    detection_confidence_post = st.slider(
+        "How confident are you about whether an attack is ongoing?", 1, 100, pre["detection_confidence"], key="post_detection_confidence",
+        help="1 = least confident; 100 = most confident.",
     )
-    attack_type_other_post = ""
-    if attack_type_post == "Other":
-        attack_type_other_post = st.text_input(
-            "Please specify the attack type", value=pre["attack_type_other"], key="post_other"
+    attack_type_post = "None"
+    if attack_detected_post == "Yes":
+        categories = [category for category in attack_type_options if category != "None"]
+        attack_type_post = st.selectbox(
+            "What type of attack do you suspect?",
+            categories,
+            index=categories.index(pre["attack_type"]) if pre["attack_type"] in categories else None,
+            placeholder="Select an attack type...",
+            key="post_attack_type",
         )
-    confidence_post = st.slider(
-        "How confident are you?", 1, 100, pre["confidence"], key="post_confidence"
-    )
+
+    category_confidence_post = detection_confidence_post
+    if attack_detected_post == "Yes":
+        category_confidence_post = st.slider(
+            "How confident are you in the attack category?", 1, 100, pre["category_confidence"],
+            key="post_category_confidence",
+            help="1 = least confident; 100 = most confident.",
+        )
 
     if st.button("Submit Final Assessment"):
-        if attack_type_post == "Other" and not attack_type_other_post.strip():
-            st.error("Please specify the attack type.")
+        if attack_type_post is None:
+            st.error("Please select a suspected attack type.")
             st.stop()
-        human_decision_post = round_probability_to_decision(attack_probability_post)
+        human_decision_post = attack_detected_post
 
-        llm_attack_probability_pre = llm_assessment["attack_probability"]
         llm_attack_type_pre = llm_assessment["attack_type"]
-        llm_confidence_pre = llm_assessment["confidence"]
+        llm_detection_confidence_pre = llm_assessment["detection_confidence"]
         # Dummy LLM teammate does not update its assessment after chat (no real LLM yet).
-        llm_attack_probability_post = llm_attack_probability_pre
         llm_attack_type_post = llm_attack_type_pre
-        llm_confidence_post = llm_confidence_pre
-        llm_decision_post = round_probability_to_decision(llm_attack_probability_post)
+        llm_detection_confidence_post = llm_detection_confidence_pre
+        llm_decision_post = llm_decision_pre
 
         correct_attack_detected = trial.get("attack_detected_correct_response", "Yes")
         correct_attack_type = trial.get("attack_type_correct_response", "")
 
         # Decision calculation based on condition, using final (post-chat) answers
-        agg_result = aggregate_decision(
+        agg_result = aggregate_assessment(
             condition=st.session_state.condition,
             human_decision=human_decision_post,
-            human_confidence=confidence_post,
+            human_category=attack_type_post,
+            human_detection_confidence=detection_confidence_post,
+            human_category_confidence=category_confidence_post,
             llm_decision=llm_decision_post,
-            llm_confidence=llm_confidence_post,
+            llm_category=llm_attack_type_post,
+            llm_detection_confidence=llm_detection_confidence_post,
+            llm_category_confidence=llm_assessment["category_confidence"],
         )
         team_decision = agg_result["team_decision"]
         team_perf = calculate_team_performance(team_decision, correct_attack_detected)
@@ -267,34 +291,36 @@ elif st.session_state.page == "trial_discuss":
             "trial_number": trial["trial_number"],
             "trial_id": trial["trial_id"],
             "trial_order": ",".join(st.session_state.trial_order),
-            "human_attack_type_other_pre": pre["attack_type_other"],
-            "human_attack_type_other_post": attack_type_other_post.strip(),
             "condition": st.session_state.condition,
             "timestamp_start": st.session_state.timestamp_start,
             "timestamp_pre_submit": st.session_state.timestamp_pre_submit,
             "timestamp_post_submit": now(),
-            "human_attack_probability_pre": pre["attack_probability"],
-            "human_attack_probability_post": attack_probability_post,
-            "human_attack_probability_changed": pre["attack_probability"] != attack_probability_post,
             "human_attack_type_pre": pre["attack_type"],
             "human_attack_type_post": attack_type_post,
             "human_attack_type_changed": pre["attack_type"] != attack_type_post,
-            "human_confidence_pre": pre["confidence"],
-            "human_confidence_post": confidence_post,
-            "human_confidence_changed": pre["confidence"] != confidence_post,
+            "human_detection_confidence_pre": pre["detection_confidence"],
+            "human_detection_confidence_post": detection_confidence_post,
+            "human_detection_confidence_changed": pre["detection_confidence"] != detection_confidence_post,
+            "human_category_confidence_pre": pre["category_confidence"],
+            "human_category_confidence_post": category_confidence_post,
+            "human_category_confidence_changed": pre["category_confidence"] != category_confidence_post,
+            "human_category_confidence_inferred_pre": human_decision_pre == "No",
+            "human_category_confidence_inferred_post": human_decision_post == "No",
             "human_attack_detected_pre": human_decision_pre,
             "human_attack_detected_post": human_decision_post,
-            "llm_attack_probability_pre": llm_attack_probability_pre,
-            "llm_attack_probability_post": llm_attack_probability_post,
-            "llm_attack_probability_changed": llm_attack_probability_pre != llm_attack_probability_post,
+            "human_attack_detected_changed": human_decision_pre != human_decision_post,
             "llm_attack_type_pre": llm_attack_type_pre,
             "llm_attack_type_post": llm_attack_type_post,
             "llm_attack_type_changed": llm_attack_type_pre != llm_attack_type_post,
-            "llm_confidence_pre": llm_confidence_pre,
-            "llm_confidence_post": llm_confidence_post,
-            "llm_confidence_changed": llm_confidence_pre != llm_confidence_post,
+            "llm_detection_confidence_pre": llm_detection_confidence_pre,
+            "llm_detection_confidence_post": llm_detection_confidence_post,
+            "llm_detection_confidence_changed": llm_detection_confidence_pre != llm_detection_confidence_post,
+            "llm_category_confidence_pre": llm_assessment["category_confidence"],
+            "llm_category_confidence_post": llm_assessment["category_confidence"],
+            "llm_category_confidence_changed": False,
             "llm_attack_detected_pre": llm_decision_pre,
             "llm_attack_detected_post": llm_decision_post,
+            "llm_attack_detected_changed": llm_decision_pre != llm_decision_post,
             "attack_detected_correct_response": correct_attack_detected,
             "attack_type_correct_response": correct_attack_type,
             "ids_rows_visible": st.session_state.ids_rows_visible,
@@ -304,24 +330,22 @@ elif st.session_state.page == "trial_discuss":
         for source in ("human", "llm"):
             for stage in ("pre", "post"):
                 record[f"{source}_attack_detection_correct_{stage}"] = int(
-                    round_probability_to_decision(record[f"{source}_attack_probability_{stage}"]) == correct_attack_detected
+                    record[f"{source}_attack_detected_{stage}"] == correct_attack_detected
                 )
                 chosen_type = record[f"{source}_attack_type_{stage}"]
-                if source == "human" and chosen_type == "Other":
-                    chosen_type = record[f"human_attack_type_other_{stage}"]
                 record[f"{source}_attack_type_correct_{stage}"] = int(
                     chosen_type.strip().casefold() == correct_attack_type.casefold()
                 )
-        selected_source = agg_result.get("selected_source", agg_result["chosen_source"])
-        team_attack_type = record[f"{selected_source}_attack_type_post"]
-        if selected_source == "human" and team_attack_type == "Other":
-            team_attack_type = record["human_attack_type_other_post"]
+        team_attack_type = agg_result["team_attack_type"]
+        record.update({key: value for key, value in agg_result.items()
+                       if key.startswith("pool_") or key.startswith("team_")})
+        record["pool_category_support"] = json.dumps(record["pool_category_support"], sort_keys=True)
+        record["aggregation_method"] = "equal_weight_task_confidence_v2" if st.session_state.condition == "pool" else "human_leader"
         record.update(
             team_decision=team_decision,
             team_attack_type=team_attack_type,
-            team_selected_source=selected_source,
-            team_attack_detection_correct=record[f"{selected_source}_attack_detection_correct_post"],
-            team_attack_type_correct=record[f"{selected_source}_attack_type_correct_post"],
+            team_attack_detection_correct=int(team_decision == correct_attack_detected),
+            team_attack_type_correct=int(team_attack_type == correct_attack_type),
         )
         record["team_score"] = record["team_attack_detection_correct"] + record["team_attack_type_correct"]
         answers_path = save_answers_csv(
@@ -335,14 +359,14 @@ elif st.session_state.page == "trial_discuss":
         st.session_state.submission_summary = {
             "condition": st.session_state.condition,
             "human_decision": human_decision_post,
-            "human_confidence": confidence_post,
+            "human_detection_confidence": detection_confidence_post,
+            "human_category_confidence": category_confidence_post,
             "llm_decision": llm_decision_post,
-            "llm_confidence": llm_confidence_post,
+            "llm_detection_confidence": llm_detection_confidence_post,
+            "llm_category_confidence": llm_assessment["category_confidence"],
             "team_decision": team_decision,
             "correct_decision": correct_attack_detected,
             "team_performance": team_perf,
-            "chosen_source": agg_result["chosen_source"],
-            "selected_source": agg_result.get("selected_source", agg_result["chosen_source"]),
         }
         st.session_state.feedback_record = record
         st.session_state.page = "episode_complete"
@@ -398,13 +422,18 @@ elif st.session_state.page == "feedback":
         st.divider()
         if summary["condition"] == "leader":
             st.markdown("**Your final judgment determined the team decision.**")
-        elif summary["chosen_source"] == "tie_breaker":
-            selected = "your judgment" if summary["selected_source"] == "human" else "the AI teammate's judgment"
-            st.markdown(f"**Your confidence ratings were equal. A random tie-break selected {selected} to determine the team decision.**")
-        elif summary["chosen_source"] == "human":
-            st.markdown("**Your final judgment determined the team decision because your confidence was higher.**")
         else:
-            st.markdown("**Your AI teammate's final judgment determined the team decision because its confidence was higher.**")
+            for label, task in (("Attack detection", "detection"), ("Attack category", "category")):
+                source = record[f"team_{task}_source"]
+                if source == "agreement":
+                    message = "You and your AI teammate agreed."
+                else:
+                    selected = "your answer" if source == "human" else "the AI teammate's answer"
+                    if record[f"team_{task}_tie_break"]:
+                        message = f"Equal confidence: a random tie-break selected {selected}."
+                    else:
+                        message = f"The higher confidence for this task selected {selected}."
+                st.markdown(f"**{label}: {message}**")
 
     st.header("Teammate scores")
     st.write("Detection and attack-type accuracy are scored separately.")
@@ -457,9 +486,9 @@ elif st.session_state.page == "feedback":
             st.session_state.timestamp_pre_submit = None
             st.session_state.ids_rows_visible = ids_default_rows
             st.session_state.ids_rows_revealed = 0
-            for key in ("initial_attack_probability", "initial_attack_type", "initial_confidence",
-                        "post_attack_probability", "post_attack_type", "post_confidence",
-                        "initial_other", "post_other"):
+            for key in ("initial_attack_detected", "initial_attack_type", "initial_detection_confidence",
+                        "post_attack_detected", "post_attack_type", "post_detection_confidence",
+                        "initial_category_confidence", "post_category_confidence"):
                 st.session_state.pop(key, None)
             st.session_state.page = "trial_initial"
         st.rerun()
