@@ -20,6 +20,22 @@ Responses and timestamped chat are saved in `data/{participant_id}_answers.csv` 
 
 Real LLM integration is not implemented.
 
+The Ben-Asher dataset can be consolidated with `python consolidate_ben_asher.py`.
+This regenerates `ben_asher_dataset/overall_attack_decisions.csv`, with one
+overall attack decision per participant and trial. The `security_education_code`
+and `security_education_answer` columns preserve the reported highest degree
+qualification related to network operation and security (`Degree` in the
+processed survey; Q14 in the original questionnaire). Codes are 1 = None,
+2 = Associate/certificate, 3 = Bachelors, and 4 = Masters.
+
+The `expertise_group` column uses the requested education-based split:
+**novice** when the security-related education answer is **None**, and
+**expert** for any other reported answer. This is our operational classification,
+not a published score threshold or the papers' recruitment-based expert/novice
+grouping. Missing education or an unreliable survey match leaves the label
+blank, including participants 6036 and 9036. See
+[dataset documentation](ben_asher_dataset/CONSOLIDATION.md) for join and label details.
+
 Run the automated checks (temporary output is isolated from participant data):
 
 ```powershell

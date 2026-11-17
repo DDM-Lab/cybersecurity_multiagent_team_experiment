@@ -2,3 +2,9 @@ data/
 __pycache__/
 *.pyc
 .venv/
+
+# Ben-Asher source data, generated analyses, and supporting scripts
+/ben_asher_dataset/
+/consolidate_ben_asher.py
+/plot_ben_asher_histograms.py
+/plot_practical_items.py
