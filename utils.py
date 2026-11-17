@@ -2,10 +2,10 @@
 import csv
 import json
 import os
+import random
 
 CONFIG_DIR = os.path.join(os.path.dirname(__file__), "config")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-TRACKER_FILE = os.path.join(DATA_DIR, "assignment_tracker.json")
 
 
 def load_json(path):
@@ -18,37 +18,54 @@ def load_settings():
 
 
 def load_trial(trial_id):
-    return load_json(os.path.join(CONFIG_DIR, f"{trial_id}.json"))
+    """Load only the unlabeled CSV for the assessment stages."""
+    config = load_settings()["trials"][trial_id]
+    path = os.path.join(os.path.dirname(__file__), "IDS_tables", config["csv"])
+    with open(path, newline="", encoding="utf-8") as f:
+        events = list(csv.DictReader(f))
+    return {"trial_id": trial_id, "ids_events": events,
+            "attack_detected_correct_response": "Yes",
+            "attack_type_correct_response": config["attack_type"]}
+
+
+def load_labeled_table(trial_id):
+    """Feedback only: never used while participants are making decisions."""
+    filename = load_settings()["trials"][trial_id]["csv"].replace(".csv", "-labelled.csv")
+    with open(os.path.join(os.path.dirname(__file__), "IDS_tables", filename),
+              newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
 
 def get_next_condition():
-    """Determine the condition for the next incoming participant.
+    """Random between-subjects assignment, called once at consent."""
+    return random.choice(["leader", "pool"])
 
-    Alternates between 'leader' and 'pool' based on the recorded count in
-    data/assignment_tracker.json.
-    """
-    os.makedirs(DATA_DIR, exist_ok=True)
-    tracker = {"total_participants": 0, "last_condition": None}
-    if os.path.exists(TRACKER_FILE):
-        try:
-            tracker = load_json(TRACKER_FILE)
-        except Exception:
-            pass
 
-    last_condition = tracker.get("last_condition")
-    next_condition = "pool" if last_condition == "leader" else "leader"
-    tracker["last_condition"] = next_condition
-    tracker["total_participants"] = tracker.get("total_participants", 0) + 1
-
-    with open(TRACKER_FILE, "w", encoding="utf-8") as f:
-        json.dump(tracker, f, indent=2)
-
-    return next_condition
+def create_trial_plan(settings):
+    order = random.sample(settings["trial_order"], len(settings["trial_order"]))
+    correct_trials = set(random.sample(order, len(order) // 2))
+    assessments = {}
+    for trial_id in order:
+        correct_type = settings["trials"][trial_id]["attack_type"]
+        correct = trial_id in correct_trials
+        assessments[trial_id] = {
+            "attack_probability": 85 if correct else 30,
+            "attack_type": correct_type if correct else "No attack",
+            "confidence": 80,
+            "explanation": (
+                f"Considering the full event log, I suspect {correct_type}. "
+                "The pattern of network activity suggests an ongoing attack."
+                if correct else
+                "Considering the full event log, I interpret this activity as normal traffic. "
+                "I do not suspect an ongoing attack."
+            ),
+        }
+    return order, assessments
 
 
 def get_dummy_llm_reply(trial_config, user_message):
     # Placeholder for a future real LLM API call; signature already accepts the user message.
-    return trial_config["llm_dummy_reply"]
+    return trial_config["llm_initial_assessment"]["explanation"]
 
 
 def _read_existing_rows(path):

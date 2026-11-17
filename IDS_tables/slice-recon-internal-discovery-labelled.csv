@@ -1,0 +1,81 @@
+row_id,block,ts,sensor,src_ip,src_port,dst_ip,dst_port,proto,app_proto,bytes_out,bytes_in,pkts_out,pkts_in,duration,info,malicious,attack_class,step_id
+1,1,20:20:40.347,user,10.10.20.252,38196,203.0.113.33,53,UDP,dns,,,,,,A corp.lab,1,recon,dns-enum
+2,1,20:20:43.401,user,10.10.20.252,38823,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,1,recon,dns-enum
+3,1,20:20:43.442,user,10.10.20.252,53315,203.0.113.33,53,UDP,dns,,,,,,A admin.corp.lab -> NXDOMAIN,1,recon,dns-enum
+4,1,20:20:43.447,user,10.10.20.252,49708,203.0.113.33,53,UDP,dns,,,,,,A db.corp.lab,1,recon,dns-enum
+5,1,20:20:43.448,user,10.10.20.252,49708,203.0.113.33,53,UDP,dns,,,,,,A db.corp.lab -> NOERROR,1,recon,dns-enum
+6,1,20:20:43.453,user,10.10.20.252,51642,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,1,recon,dns-enum
+7,1,20:20:43.453,user,10.10.20.252,51642,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,1,recon,dns-enum
+8,1,20:20:43.728,user,10.10.20.152,57265,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+9,1,20:20:45.421,user,10.10.20.152,43624,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+10,1,20:20:47.134,user,10.10.20.152,35543,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+11,2,20:20:48.798,user,10.10.20.252,58632,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+12,2,20:20:50.872,user,10.10.20.252,36766,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+13,2,20:20:52.520,user,10.10.20.252,43724,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+14,2,20:20:54.197,user,10.10.20.252,40760,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+15,2,20:20:55.860,user,10.10.20.252,46661,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+16,2,20:20:57.547,user,10.10.20.54,53326,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+17,2,20:20:59.224,user,10.10.20.54,43214,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+18,2,20:21:00.897,user,10.10.20.54,56247,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+19,2,20:21:02.574,user,10.10.20.54,58112,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+20,2,20:21:02.634,user,10.10.20.252,,10.10.30.67,,ICMP,flow,84,0,2,0,1.11269,,1,recon,sweep-srv
+21,3,20:21:02.634,user,10.10.20.252,,10.10.30.18,,ICMP,flow,84,0,2,0,1.105832,,1,recon,sweep-srv
+22,3,20:21:02.634,user,10.10.20.252,,10.10.30.50,,ICMP,flow,84,0,2,0,1.111513,,1,recon,sweep-srv
+23,3,20:21:03.628,user,10.10.20.252,,10.10.30.109,,ICMP,flow,108,0,2,0,0.100508,,1,recon,sweep-srv
+24,3,20:21:03.629,user,10.10.20.252,,10.10.30.109,,ICMP,flow,84,0,2,0,1.118119,,1,recon,sweep-srv
+25,3,20:21:03.629,user,10.10.20.252,,10.10.30.16,,ICMP,flow,84,0,2,0,1.110989,,1,recon,sweep-srv
+26,3,20:21:03.629,user,10.10.20.252,,10.10.30.81,,ICMP,flow,108,0,2,0,0.101722,,1,recon,sweep-srv
+27,3,20:21:04.606,user,10.10.20.252,45007,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups-host3
+28,3,20:21:04.623,user,10.10.20.252,,10.10.30.36,,ICMP,flow,108,0,2,0,0.101195,,1,recon,sweep-srv
+29,3,20:21:06.349,user,10.10.20.54,54676,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups
+30,3,20:21:06.612,user,10.10.20.252,,10.10.30.8,,ICMP,flow,108,0,2,0,0.101188,,1,recon,sweep-srv
+31,4,20:21:07.614,user,10.10.20.252,,10.10.30.132,,ICMP,flow,84,0,2,0,1.109683,,1,recon,sweep-srv
+32,4,20:21:08.023,user,10.10.20.54,56518,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups
+33,4,20:21:09.596,user,10.10.20.252,,10.10.30.94,,ICMP,flow,108,0,2,0,0.101424,,1,recon,sweep-srv
+34,4,20:21:09.598,user,10.10.20.252,58630,10.10.10.163,80,TCP,http,615,747,6,4,0.000454,,0,benign,browse-host3
+35,4,20:21:11.391,user,10.10.20.152,57913,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-ws2
+36,4,20:21:11.586,user,10.10.20.252,,10.10.30.205,,ICMP,flow,108,0,2,0,0.101032,,1,recon,sweep-srv
+37,4,20:21:12.592,user,10.10.20.252,,10.10.30.242,,ICMP,flow,84,0,2,0,1.215031,,1,recon,sweep-srv
+38,4,20:21:13.080,user,10.10.20.152,32953,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-ws2
+39,4,20:21:14.573,user,10.10.20.252,,10.10.30.15,,ICMP,flow,108,0,2,0,0.101812,,1,recon,sweep-srv
+40,4,20:21:14.573,user,10.10.20.252,,10.10.30.222,,ICMP,flow,108,0,2,0,0.10191,,1,recon,sweep-srv
+41,5,20:21:14.573,user,10.10.20.252,,10.10.30.227,,ICMP,flow,108,0,2,0,0.101843,,1,recon,sweep-srv
+42,5,20:21:14.574,user,10.10.20.252,55042,10.10.10.163,80,TCP,http,619,1351,6,4,0.000635,,0,benign,browse-host3
+43,5,20:21:14.574,user,10.10.20.252,58618,10.10.10.163,80,TCP,http,619,920,6,4,0.00079,,0,benign,browse-host3
+44,5,20:21:14.773,user,10.10.20.152,41341,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-ws2
+45,5,20:21:15.566,user,10.10.20.252,,10.10.30.236,,ICMP,flow,108,0,2,0,0.100683,,1,recon,sweep-srv
+46,5,20:21:16.451,user,10.10.20.152,60751,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+47,5,20:21:18.142,user,10.10.20.152,56400,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+48,5,20:21:19.840,user,10.10.20.152,55581,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+49,5,20:21:21.535,user,10.10.20.54,58136,10.10.10.163,80,TCP,http,610,920,6,4,0.00286,,0,benign,browse-intranet
+50,5,20:21:23.284,user,10.10.20.54,44582,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-intranet
+51,6,20:21:24.801,user,10.10.20.152,38462,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-ws2
+52,6,20:21:26.510,user,10.10.20.252,55210,10.10.10.163,80,TCP,http,619,1351,6,4,0.00061,,0,benign,browse-host3
+53,6,20:21:27.566,user,10.10.20.252,36029,10.10.20.152,3389,TCP,flow,58,54,1,1,3e-05,,1,recon,arp-local
+54,6,20:21:28.500,user,10.10.20.54,58284,10.10.10.163,80,TCP,http,619,920,6,4,0.000356,,0,benign,browse-intranet
+55,6,20:21:28.558,user,10.10.20.252,36029,10.10.20.152,445,TCP,flow,58,54,1,1,8e-06,,1,recon,arp-local
+56,6,20:21:30.489,user,10.10.20.54,34632,10.10.10.163,80,TCP,http,615,747,6,4,0.000256,,0,benign,browse-intranet
+57,6,20:21:30.541,user,10.10.20.252,36029,10.10.20.54,80,TCP,flow,58,54,1,1,1.5e-05,,1,recon,arp-local
+58,6,20:21:30.544,user,10.10.20.252,36029,10.10.20.152,80,TCP,flow,58,54,1,1,1.1e-05,,1,recon,arp-local
+59,6,20:21:30.575,user,10.10.20.252,36029,10.10.20.1,22,TCP,flow,58,54,1,1,4.9e-05,,1,recon,arp-local
+60,6,20:21:32.144,user,10.10.20.152,58928,10.10.10.163,80,TCP,http,,,,,,/,0,benign,browse-ws2
+61,7,20:21:32.490,user,10.10.20.252,36029,10.10.20.1,445,TCP,flow,58,54,1,1,9e-06,,1,recon,arp-local
+62,7,20:21:32.491,user,10.10.20.252,40037,10.10.30.68,443,TCP,flow,58,0,1,0,0.0,,1,recon,sweep-srv
+63,7,20:21:33.570,user,10.10.20.252,40037,10.10.30.66,443,TCP,flow,58,0,1,0,0.0,,1,recon,sweep-srv
+64,7,20:21:33.843,user,10.10.20.54,45920,10.10.10.163,80,TCP,http,,,,,,/,0,benign,browse-intranet
+65,7,20:21:35.465,user,10.10.20.252,40039,10.10.30.179,80,TCP,flow,54,0,1,0,0.0,,1,recon,sweep-srv
+66,7,20:21:35.473,user,10.10.20.54,34704,10.10.10.163,80,TCP,http,626,747,6,4,0.000263,,0,benign,browse-intranet
+67,7,20:21:37.457,user,10.10.20.152,45256,10.10.10.163,80,TCP,http,619,1351,6,4,0.000577,,0,benign,browse-ws2
+68,7,20:21:37.457,user,10.10.20.252,40037,10.10.30.188,80,TCP,flow,54,0,1,0,0.0,,1,recon,sweep-srv
+69,7,20:21:38.540,user,10.10.20.252,40037,10.10.30.118,443,TCP,flow,58,0,1,0,0.0,,1,recon,sweep-srv
+70,7,20:21:38.805,user,10.10.20.152,59048,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-ws2
+71,8,20:21:40.456,user,10.10.20.54,52216,10.10.10.163,80,TCP,http,626,747,6,4,0.000298,,0,benign,browse-intranet
+72,8,20:21:40.529,user,10.10.20.252,40039,10.10.30.242,443,TCP,flow,58,0,1,0,0.0,,1,recon,sweep-srv
+73,8,20:21:42.432,user,10.10.20.252,40039,10.10.30.8,80,TCP,flow,54,0,1,0,0.0,,1,recon,sweep-srv
+74,8,20:21:42.441,user,10.10.20.54,52192,10.10.10.163,80,TCP,http,610,920,6,4,0.001678,,0,benign,browse-intranet
+75,8,20:21:43.515,user,10.10.20.54,39458,10.10.30.173,3306,TCP,flow,327,300,5,3,0.000342,,0,benign,app-queries
+76,8,20:21:44.423,user,10.10.20.252,40037,10.10.30.201,80,TCP,flow,54,0,1,0,0.0,,1,recon,sweep-srv
+77,8,20:21:44.485,user,10.10.20.252,64832,10.10.30.173,3306,TCP,flow,112,58,2,1,4.4e-05,,1,recon,services-db
+78,8,20:21:47.436,user,10.10.20.54,39448,10.10.30.173,3306,TCP,flow,327,300,5,3,0.000445,,0,benign,app-queries
+79,8,20:21:47.436,user,10.10.20.252,35138,203.0.113.33,53,TCP,flow,222,0,3,0,2.034288,,1,recon,dns-enum
+80,8,20:21:47.443,user,10.10.20.54,35954,10.10.30.173,3306,TCP,flow,327,300,5,3,0.000487,,0,benign,app-queries

@@ -1,7 +1,8 @@
 """Streamlit prototype: participant reviews an IDS table and gives an independent
 judgment, then discusses with a dummy LLM teammate before finalizing.
-Flow: consent -> trial_initial -> trial_discuss -> done."""
+Flow: consent -> (trial_initial -> trial_discuss -> feedback) x 6 -> done."""
 from datetime import datetime
+from html import escape
 
 import pandas as pd
 import streamlit as st
@@ -12,6 +13,8 @@ from decision import (
     round_probability_to_decision,
 )
 from utils import (
+    create_trial_plan,
+    load_labeled_table,
     get_dummy_llm_reply,
     get_next_condition,
     load_settings,
@@ -23,32 +26,26 @@ from utils import (
 st.set_page_config(page_title="IDS Evaluation Task", layout="wide")
 
 settings = load_settings()
-trial = load_trial(settings["trial_order"][0])
 attack_type_options = settings["attack_type_options"]
-ids_total_rows = len(trial["ids_events"])
 ids_default_rows = settings["ids_table_default_rows"]
 ids_rows_increment = settings["ids_table_rows_increment"]
 
-if not isinstance(ids_default_rows, int) or not isinstance(ids_rows_increment, int):
-    raise ValueError("IDS table row settings must be integers.")
-if not 1 <= ids_default_rows <= ids_total_rows:
-    raise ValueError("ids_table_default_rows must be between 1 and the total IDS rows.")
-if ids_rows_increment <= 0 or (ids_total_rows - ids_default_rows) % ids_rows_increment != 0:
-    raise ValueError(
-        "ids_table_rows_increment must evenly reach the total rows from the default."
+if "page" not in st.session_state:
+    st.session_state.update(
+        page="consent", participant_id="", condition=None, trial_index=0,
+        chat_history=[], timestamp_start=None, timestamp_pre_submit=None,
+        pre_answers=None, submission_summary=None,
+        ids_rows_visible=ids_default_rows, ids_rows_revealed=0,
     )
 
-if "page" not in st.session_state:
-    st.session_state.page = "consent"
-    st.session_state.participant_id = ""
-    st.session_state.condition = None
-    st.session_state.chat_history = []
-    st.session_state.timestamp_start = None
-    st.session_state.timestamp_pre_submit = None
-    st.session_state.pre_answers = None
-    st.session_state.submission_summary = None
-    st.session_state.ids_rows_visible = ids_default_rows
-    st.session_state.ids_rows_revealed = 0
+trial = None
+if "trial_order" in st.session_state:
+    trial_id = st.session_state.trial_order[st.session_state.trial_index]
+    trial = load_trial(trial_id)
+    trial["trial_number"] = st.session_state.trial_index + 1
+    trial["llm_initial_assessment"] = st.session_state.llm_assessments[trial_id]
+    ids_total_rows = len(trial["ids_events"])
+    st.caption(f"Episode {trial['trial_number']} of {len(st.session_state.trial_order)}")
 
 
 def now():
@@ -65,9 +62,10 @@ def colored_line(text, is_match):
 
 def render_ids_table():
     visible_rows = st.session_state.ids_rows_visible
+    st.caption(f"Showing {visible_rows} of {ids_total_rows} rows")
     st.dataframe(
         pd.DataFrame(trial["ids_events"][:visible_rows]),
-        use_container_width=True,
+        width="stretch", hide_index=True,
     )
 
     if visible_rows < ids_total_rows:
@@ -92,11 +90,16 @@ if st.session_state.page == "consent":
     if st.button("Continue"):
         if not participant_id.strip():
             st.error("Please enter a participant ID.")
+        elif any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for char in participant_id.strip()):
+            st.error("Use letters, numbers, underscores, or hyphens in your participant ID.")
         elif not consent_given:
             st.error("You must consent to participate before continuing.")
         else:
             st.session_state.participant_id = participant_id.strip()
             st.session_state.condition = get_next_condition()
+            order, assessments = create_trial_plan(settings)
+            st.session_state.trial_order = order
+            st.session_state.llm_assessments = assessments
             st.session_state.timestamp_start = now()
             st.session_state.chat_history = []
             st.session_state.page = "trial_initial"
@@ -121,15 +124,19 @@ elif st.session_state.page == "trial_initial":
         placeholder="Select an attack type...",
         key="initial_attack_type",
     )
+    attack_type_other = ""
+    if attack_type == "Other":
+        attack_type_other = st.text_input("Please specify the attack type", key="initial_other")
     confidence = st.slider("How confident are you?", 1, 100, 50, key="initial_confidence")
 
     if st.button("Submit Initial Assessment"):
-        if attack_type is None:
+        if attack_type is None or (attack_type == "Other" and not attack_type_other.strip()):
             st.error("Please select a suspected attack type.")
         else:
             st.session_state.pre_answers = {
                 "attack_probability": attack_probability,
                 "attack_type": attack_type,
+                "attack_type_other": attack_type_other.strip(),
                 "confidence": confidence,
             }
             st.session_state.timestamp_pre_submit = now()
@@ -217,11 +224,19 @@ elif st.session_state.page == "trial_discuss":
         index=attack_type_options.index(pre["attack_type"]),
         key="post_attack_type",
     )
+    attack_type_other_post = ""
+    if attack_type_post == "Other":
+        attack_type_other_post = st.text_input(
+            "Please specify the attack type", value=pre["attack_type_other"], key="post_other"
+        )
     confidence_post = st.slider(
         "How confident are you?", 1, 100, pre["confidence"], key="post_confidence"
     )
 
     if st.button("Submit Final Assessment"):
+        if attack_type_post == "Other" and not attack_type_other_post.strip():
+            st.error("Please specify the attack type.")
+            st.stop()
         human_decision_post = round_probability_to_decision(attack_probability_post)
 
         llm_attack_probability_pre = llm_assessment["attack_probability"]
@@ -250,6 +265,10 @@ elif st.session_state.page == "trial_discuss":
         record = {
             "participant_id": st.session_state.participant_id,
             "trial_number": trial["trial_number"],
+            "trial_id": trial["trial_id"],
+            "trial_order": ",".join(st.session_state.trial_order),
+            "human_attack_type_other_pre": pre["attack_type_other"],
+            "human_attack_type_other_post": attack_type_other_post.strip(),
             "condition": st.session_state.condition,
             "timestamp_start": st.session_state.timestamp_start,
             "timestamp_pre_submit": st.session_state.timestamp_pre_submit,
@@ -282,6 +301,29 @@ elif st.session_state.page == "trial_discuss":
             "ids_rows_revealed": st.session_state.ids_rows_revealed,
             "team_performance": team_perf,
         }
+        for source in ("human", "llm"):
+            for stage in ("pre", "post"):
+                record[f"{source}_attack_detection_correct_{stage}"] = int(
+                    record[f"{source}_attack_probability_{stage}"] > 50
+                )
+                chosen_type = record[f"{source}_attack_type_{stage}"]
+                if source == "human" and chosen_type == "Other":
+                    chosen_type = record[f"human_attack_type_other_{stage}"]
+                record[f"{source}_attack_type_correct_{stage}"] = int(
+                    chosen_type.strip().casefold() == correct_attack_type.casefold()
+                )
+        selected_source = agg_result.get("selected_source", agg_result["chosen_source"])
+        team_attack_type = record[f"{selected_source}_attack_type_post"]
+        if selected_source == "human" and team_attack_type == "Other":
+            team_attack_type = record["human_attack_type_other_post"]
+        record.update(
+            team_decision=team_decision,
+            team_attack_type=team_attack_type,
+            team_selected_source=selected_source,
+            team_attack_detection_correct=record[f"{selected_source}_attack_detection_correct_post"],
+            team_attack_type_correct=record[f"{selected_source}_attack_type_correct_post"],
+        )
+        record["team_score"] = record["team_attack_detection_correct"] + record["team_attack_type_correct"]
         answers_path = save_answers_csv(
             st.session_state.participant_id, trial["trial_number"], record
         )
@@ -300,38 +342,125 @@ elif st.session_state.page == "trial_discuss":
             "correct_decision": correct_attack_detected,
             "team_performance": team_perf,
             "chosen_source": agg_result["chosen_source"],
+            "selected_source": agg_result.get("selected_source", agg_result["chosen_source"]),
         }
-        st.session_state.page = "done"
+        st.session_state.feedback_record = record
+        st.session_state.page = "episode_complete"
         st.rerun()
 
-# ------------------------------------------------------------------- done page
+# ------------------------------------------------------------ results reveal
+elif st.session_state.page == "episode_complete":
+    st.title("Episode complete. Reveal results:")
+    if st.button("Reveal results", type="primary", key="reveal_results"):
+        st.session_state.page = "feedback"
+        st.rerun()
+
+# ------------------------------------------------------------ episode feedback
+elif st.session_state.page == "feedback":
+    st.markdown("**IDS evaluation**")
+    st.title("Episode feedback")
+    summary = st.session_state.submission_summary
+    record = st.session_state.feedback_record
+
+    with st.container(border=True):
+        st.header("Team outcome")
+        team_score = record["team_score"]
+        color = {2: "green", 1: "orange", 0: "red"}[team_score]
+        outcome = {2: "Fully correct", 1: "Partially correct", 0: "Incorrect"}[team_score]
+        st.subheader(f":{color}[{outcome} ({team_score}/2)]")
+        if record["team_attack_detection_correct"]:
+            detail = "Attack detected" if record["team_attack_type_correct"] else "Attack detected - incorrect attack type"
+        else:
+            detail = "Missed attack - correct attack type" if record["team_attack_type_correct"] else "Missed attack - incorrect attack type"
+        st.write(detail)
+
+        # Color the full team comparison by the combined score; truth stays green.
+        foreground, background = {
+            2: ("#065f46", "#d1fae5"),
+            1: ("#854d0e", "#fef9c3"),
+            0: ("#991b1b", "#fee2e2"),
+        }[team_score]
+        decision_col, truth_col = st.columns(2, gap="large")
+        team_detection = "Attack present" if summary["team_decision"] == "Yes" else "No attack"
+        for column, label, detection, attack_type, text_color, bg_color in (
+            (decision_col, "FINAL TEAM DECISION", team_detection, record["team_attack_type"], foreground, background),
+            (truth_col, "GROUND TRUTH", "Attack present", trial["attack_type_correct_response"], "#065f46", "#d1fae5"),
+        ):
+            with column:
+                st.html(
+                    f'<div style="padding:18px;border-radius:8px;background:{bg_color};color:{text_color}">'
+                    f'<div>{label}</div><h3 style="color:inherit;margin:8px 0">{detection}</h3>'
+                    f'<div>Attack type: {escape(attack_type)}</div></div>'
+                )
+        st.divider()
+        if summary["condition"] == "leader":
+            st.markdown("**Your final judgment determined the team decision.**")
+        elif summary["chosen_source"] == "tie_breaker":
+            selected = "your judgment" if summary["selected_source"] == "human" else "the AI teammate's judgment"
+            st.markdown(f"**Your confidence ratings were equal. A random tie-break selected {selected} to determine the team decision.**")
+        elif summary["chosen_source"] == "human":
+            st.markdown("**Your final judgment determined the team decision because your confidence was higher.**")
+        else:
+            st.markdown("**Your AI teammate's final judgment determined the team decision because its confidence was higher.**")
+
+    st.header("Teammate scores")
+    st.write("Detection and attack-type accuracy are scored separately.")
+    score_columns = pd.MultiIndex.from_tuples([
+        ("Attack detection", "Initial"), ("Attack detection", "Final"),
+        ("Attack type", "Initial"), ("Attack type", "Final"),
+    ])
+    scores = pd.DataFrame([
+        ["Correct" if record[f"{source}_{measure}_correct_{stage}"] else "Incorrect"
+         for measure in ("attack_detection", "attack_type") for stage in ("pre", "post")]
+        for source in ("human", "llm")
+    ], index=pd.Index(["You", "AI teammate"], name="Teammate"), columns=score_columns)
+    styled_scores = scores.style.map(
+        lambda value: "background-color: #d1fae5; color: #065f46; font-weight: bold"
+        if value == "Correct" else
+        "background-color: #ffedd5; color: #9a3412; font-weight: bold"
+    )
+    st.table(styled_scores)
+
+    with st.expander("Review labeled IDS events", expanded=False):
+        st.caption("See the ground-truth label for each event. Rows labeled malicious are highlighted in red.")
+        labeled_table = pd.DataFrame(load_labeled_table(trial["trial_id"]))
+        styled_table = labeled_table.style.apply(
+            lambda row: ["background-color: #ffcdd2; color: #7f0000" if str(row["malicious"]).strip() == "1" else ""] * len(row),
+            axis=1,
+        )
+        st.dataframe(styled_table, hide_index=True, width="stretch")
+
+    last_trial = st.session_state.trial_index == len(st.session_state.trial_order) - 1
+    st.html("""<style>
+    .st-key-advance_episode button {
+        background-color: #15803d; border-color: #15803d; color: white;
+        min-height: 60px; padding: 12px 32px;
+    }
+    .st-key-advance_episode button p { font-size: 1.2rem; font-weight: 700; }
+    .st-key-advance_episode button:hover { background-color: #166534; border-color: #166534; color: white; }
+    .st-key-advance_episode button:focus-visible { outline: 3px solid #86efac; outline-offset: 3px; }
+    </style>""")
+    with st.container(horizontal_alignment="right"):
+        advance = st.button("Finish experiment" if last_trial else "Next episode", type="primary", icon=":material/arrow_forward:", icon_position="right", key="advance_episode", width=300)
+    if advance:
+        if last_trial:
+            st.session_state.page = "done"
+        else:
+            st.session_state.trial_index += 1
+            st.session_state.chat_history = []
+            st.session_state.pre_answers = None
+            st.session_state.submission_summary = None
+            st.session_state.timestamp_start = now()
+            st.session_state.timestamp_pre_submit = None
+            st.session_state.ids_rows_visible = ids_default_rows
+            st.session_state.ids_rows_revealed = 0
+            for key in ("initial_attack_probability", "initial_attack_type", "initial_confidence",
+                        "post_attack_probability", "post_attack_type", "post_confidence",
+                        "initial_other", "post_other"):
+                st.session_state.pop(key, None)
+            st.session_state.page = "trial_initial"
+        st.rerun()
+
 elif st.session_state.page == "done":
     st.title(settings["experiment_name"])
-    st.success("Trial completed. Your responses have been saved.")
-
-    summary = st.session_state.get("submission_summary")
-    if summary:
-        st.subheader("Team Performance Feedback")
-        score_text = "Correct" if summary["team_performance"] == 1 else "Incorrect"
-        score_color = "green" if summary["team_performance"] == 1 else "red"
-
-        if summary["condition"] == "leader":
-            st.markdown(
-                f"**Team Decision Mechanism:** As the team leader, your judgment determined the final team decision.\n\n"
-                f"- **Your Decision:** Attack Detected = **{summary['human_decision']}**\n"
-                f"- **Ground Truth:** Attack Detected = **{summary['correct_decision']}**\n"
-                f"- **Final Team Performance Score:** :{score_color}[**{score_text} ({summary['team_performance']}/1)**]"
-            )
-        else:
-            st.markdown(
-                f"**Team Decision Mechanism:** The team decision was formed by jointly combining your judgment "
-                f"and your AI teammate's judgment, weighted by each party's confidence rating.\n\n"
-                f"- **Your Assessment:** Attack Detected = **{summary['human_decision']}** (Confidence: {summary['human_confidence']}%)\n"
-                f"- **AI Teammate Assessment:** Attack Detected = **{summary['llm_decision']}** (Confidence: {summary['llm_confidence']}%)\n"
-                f"- **Joint Team Decision:** Attack Detected = **{summary['team_decision']}**\n"
-                f"- **Ground Truth:** Attack Detected = **{summary['correct_decision']}**\n"
-                f"- **Final Team Performance Score:** :{score_color}[**{score_text} ({summary['team_performance']}/1)**]"
-            )
-
-    st.write(f"Answers saved to: `{st.session_state.answers_path}`")
-    st.write(f"Chat log saved to: `{st.session_state.chat_path}`")
+    st.success("All six episodes completed. Your responses and chat logs have been saved. Thank you!")

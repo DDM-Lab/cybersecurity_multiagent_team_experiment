@@ -1,64 +1,27 @@
-# IDS Evaluation Task with Multi-agent teams
+# IDS evaluation experiment
 
-In this experiment, human subjects will interact with an LLM chat to make scenario judgements with corresponding confidence ratings after looking through an IDS table with a series of network events. 
+Run using the project virtual environment:
 
-Please use the following virtual environment located in: "C:\Users\groessli\Documents\Virtual_Env\ids_exp"
-
-The requirements are located in requirements.txt.
-
-This application should use streamlit, and the focus is MVP! We will slowly integrate and add more features for experimental structure, LLM API key, etc. as we proceed with this repository. Let's just get a prototype up and running so we have a visualization on what this experiment can look like at a basic level, alongside a basic mechanism to store data as CSV files. No database management! No frills. Just a simple mechanism to store the chat convos with the human in the chat with timestamps, alongside their answers to the required questions. 
-
-
-Please make sure to update this Readme once you've finished implementation. Be VERY concise and use plain english. 
-
-## Current status: working prototype with authority manipulation
-
-Run it with:
-```
-streamlit run app.py
+```powershell
+& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -m streamlit run app.py
 ```
 
-**Flow:** consent page (participant ID + consent checkbox, condition assigned) → IDS table + dummy LLM chat + judgment form → confirmation page with condition-specific performance feedback.
+Participants consent once and complete six trials in a random order: DoS, Evasion, Exfiltration, SMB, Recon, and DVWA. Each participant is randomly assigned to human leader or confidence pooling for all six trials. Pooling uses the higher-confidence judgment, with a random tie-breaker.
 
-**Experimental manipulation (Authority):**
-- **leader**: Human decision exclusively determines the team decision and score.
-- **pool**: Team decision is aggregated between human and LLM, weighted by confidence (highest confidence wins; random tie-breaker).
-- Condition is alternated between incoming participants via `data/assignment_tracker.json`.
+Each trial shows the unlabeled CSV from `IDS_tables`, starting with 10 rows. Each reveal adds 10 rows. Participants submit an independent assessment, discuss with a scripted AI teammate, and submit a final assessment. The AI represents a full-table assessment and does not change after discussion. Exactly three AI assessments are correct on both detection and type; three incorrectly report no attack. Which three are correct is randomized per participant.
 
-**Files:**
-- `app.py` — Streamlit app UI and flow orchestration.
-- `decision.py` — Standalone decision aggregation heuristics and binary team performance calculation (`1` or `0`).
-- `utils.py` — Config loading, condition tracking, dummy LLM reply, and CSV persistence.
-- `config/settings.json` — Experiment settings (name, trial order).
-- `config/trial_1.json` — Dummy trial data: IDS events, LLM assessment/reply, and ground truth correct responses.
-- `data/{participant_id}_answers.csv` and `data/{participant_id}_chat.csv` — CSV data storage per participant. Answers CSV contains condition, human responses, LLM responses, ground truth, and team performance.
+All six tables contain an attack. Detection is correct only above 50%; exactly 50% is incorrect. Detection and attack-type correctness are recorded separately for the human and AI, before and after discussion. Other requires a written answer; it matches the correct type after trimming spaces and ignoring capitalization. The team outcome scores both answers out of two using the same selected teammate: green for 2/2, yellow for 1/2, and red for 0/2. The original `team_performance` field remains detection-only; `team_score` stores the combined score alongside separate team correctness fields.
 
-The IDS table initially shows `ids_table_default_rows` rows. Participants can reveal more rows with the button; each click adds `ids_table_rows_increment` rows until the full table is visible. The answers CSV records the final visible row count and number of reveals. These settings are experimenter-controlled in `config/settings.json` and must reach the full table evenly.
+After each final submission, an episode-complete screen hides results until the participant clicks "Reveal results". Feedback shows the team outcome, whose judgment determined it (including random ties), and separate initial/final teammate scores. "Review labeled IDS events" expands the full labeled CSV with malicious rows highlighted red. Participant screens do not display saved file paths. Labeled files are used only for feedback; key files and JSON tables are unused. The dropdown includes all six types, existing distractors, No attack (first), and Other (last).
 
-**Not yet implemented:** real LLM API calls, multiple/randomized trials, additional experimental conditions, Prolific ID capture, authentication.
+`config/settings.json` maps trial IDs to CSVs and correct types. `config/trial_1.json` is legacy and unused. `app.py` controls the flow; `utils.py` loads data and saves CSVs; `decision.py` combines team decisions.
 
-## For the coding agent: how to run/test
+Responses and timestamped chat are saved in `data/{participant_id}_answers.csv` and `data/{participant_id}_chat.csv`. Responses include trial identity, presentation order, condition, initial/final answers, separate correctness scores, and row-reveal counts. Assignment and progress persist during the browser session; refreshing into a new session does not resume a previous experiment. Use a unique participant ID per session.
 
-The project's Python interpreter lives in a dedicated venv, not on the default `python`/`pip` PATH. Always call it explicitly:
+Real LLM integration is not implemented.
 
+Run the automated checks (temporary output is isolated from participant data):
+
+```powershell
+& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -m unittest test_experiment -v
 ```
-& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -m streamlit run app.py --server.headless true
-```
-
-Quick sanity checks (no need to click through the UI for these):
-```
-& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -c "import ast; ast.parse(open('app.py').read()); ast.parse(open('utils.py').read())"
-& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -c "import json; json.load(open('config/settings.json')); json.load(open('config/trial_1.json'))"
-```
-
-To test `save_answers_csv`/`save_chat_csv` behavior directly without the UI:
-```
-& "C:\Users\groessli\Documents\Virtual_Env\ids_exp\Scripts\python.exe" -c "import utils; print(utils.save_answers_csv('test_participant', 1, {'participant_id':'test_participant','trial_number':1,'attack_detected':'Yes','attack_type':'Port scan','confidence':80}))"
-```
-
-After any manual test runs, delete the generated `data/` folder/CSVs (they're git-ignored scratch output, not fixtures):
-```
-Remove-Item -Recurse -Force data -ErrorAction SilentlyContinue
-```
-
-If launching Streamlit to smoke-test, run it as a background/async command, confirm it prints `Local URL: http://localhost:8501` with no traceback, then kill the process rather than leaving it running.

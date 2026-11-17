@@ -76,6 +76,7 @@ def aggregate_decision(
         return {
             "team_decision": chosen_decision,
             "chosen_source": "tie_breaker",
+            "selected_source": chosen_source,
         }
 
 

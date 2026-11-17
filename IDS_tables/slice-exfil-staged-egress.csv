@@ -1,0 +1,41 @@
+row_id,block,ts,sensor,src_ip,src_port,dst_ip,dst_port,proto,app_proto,bytes_out,bytes_in,pkts_out,pkts_in,duration,info
+1,1,20:26:45.478,user,10.10.20.152,57182,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR
+2,1,20:26:45.560,user,10.10.20.252,50456,203.0.113.33,80,TCP,http,,,,,,"/upload ua=""curl/8.21.0"""
+3,1,20:26:50.080,user,10.10.20.152,51722,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN
+4,1,20:26:50.105,user,10.10.20.252,43011,203.0.113.33,53,UDP,dns,,,,,,A 2mbohbaro6vpg2sngp7rfoydz7evhyy4wgrd6dy.tunnel.corp.lab -> NXDOMAIN
+5,1,20:26:54.698,user,10.10.20.152,38516,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR
+6,1,20:26:54.804,user,10.10.20.252,44018,203.0.113.33,53,UDP,dns,,,,,,A qztjx4g5rzho7vptrevqnygnop3nvrbxeyay7wy.tunnel.corp.lab
+7,1,20:26:54.804,user,10.10.20.252,44018,203.0.113.33,53,UDP,dns,,,,,,A qztjx4g5rzho7vptrevqnygnop3nvrbxeyay7wy.tunnel.corp.lab -> NXDOMAIN
+8,1,20:26:55.020,user,10.10.20.252,41435,203.0.113.33,53,UDP,dns,,,,,,A 743alsqhaipbaiwncpf7t2jnb77ez3t6qwo5p6q.tunnel.corp.lab
+9,1,20:26:55.021,user,10.10.20.252,41435,203.0.113.33,53,UDP,dns,,,,,,A 743alsqhaipbaiwncpf7t2jnb77ez3t6qwo5p6q.tunnel.corp.lab -> NXDOMAIN
+10,1,20:26:55.236,user,10.10.20.252,36166,203.0.113.33,53,UDP,dns,,,,,,A qwubdrchtvenosfjerogsw4xmqps5qsmhirtocq.tunnel.corp.lab
+11,2,20:26:55.236,user,10.10.20.252,36166,203.0.113.33,53,UDP,dns,,,,,,A qwubdrchtvenosfjerogsw4xmqps5qsmhirtocq.tunnel.corp.lab -> NXDOMAIN
+12,2,20:26:55.451,user,10.10.20.252,47052,203.0.113.33,53,UDP,dns,,,,,,A qq6vtavec5xyhnpahoiiq3jfce4orkgwx7x6iii.tunnel.corp.lab
+13,2,20:26:55.451,user,10.10.20.252,47052,203.0.113.33,53,UDP,dns,,,,,,A qq6vtavec5xyhnpahoiiq3jfce4orkgwx7x6iii.tunnel.corp.lab -> NXDOMAIN
+14,2,20:26:55.661,user,10.10.20.252,44006,203.0.113.33,53,UDP,dns,,,,,,A mhscacuuob3a4ovpoxu7piregk47zs6smlmbq2y.tunnel.corp.lab
+15,2,20:26:55.661,user,10.10.20.252,44006,203.0.113.33,53,UDP,dns,,,,,,A mhscacuuob3a4ovpoxu7piregk47zs6smlmbq2y.tunnel.corp.lab -> NXDOMAIN
+16,2,20:26:55.874,user,10.10.20.252,41917,203.0.113.33,53,UDP,dns,,,,,,A r2msrrd2juxrp5p2wgvkomidsrs6m7fdoo6jupq.tunnel.corp.lab
+17,2,20:26:55.874,user,10.10.20.252,41917,203.0.113.33,53,UDP,dns,,,,,,A r2msrrd2juxrp5p2wgvkomidsrs6m7fdoo6jupq.tunnel.corp.lab -> NXDOMAIN
+18,2,20:26:56.090,user,10.10.20.252,33886,203.0.113.33,53,UDP,dns,,,,,,A lwbhjmf3sxikp3x3koedneeznlynaxd2bag6z4i.tunnel.corp.lab
+19,2,20:26:56.091,user,10.10.20.252,33886,203.0.113.33,53,UDP,dns,,,,,,A lwbhjmf3sxikp3x3koedneeznlynaxd2bag6z4i.tunnel.corp.lab -> NXDOMAIN
+20,2,20:26:56.302,user,10.10.20.252,44719,203.0.113.33,53,UDP,dns,,,,,,A ngxunmq74tzmmdu3tamno34xj4f6b4dia2vxgiq.tunnel.corp.lab
+21,3,20:26:56.302,user,10.10.20.252,44719,203.0.113.33,53,UDP,dns,,,,,,A ngxunmq74tzmmdu3tamno34xj4f6b4dia2vxgiq.tunnel.corp.lab -> NXDOMAIN
+22,3,20:26:59.316,user,10.10.20.152,57290,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab
+23,3,20:27:04.912,user,10.10.20.152,43432,10.10.10.163,80,TCP,http,,,,,,/
+24,3,20:27:09.198,user,10.10.20.252,58363,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab
+25,3,20:27:09.198,user,10.10.20.252,58363,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR
+26,3,20:27:12.940,user,10.10.20.252,56003,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR
+27,3,20:27:17.479,user,10.10.20.54,44995,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR
+28,3,20:27:22.049,user,10.10.20.54,49206,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR
+29,3,20:27:26.728,user,10.10.20.252,39380,10.10.10.163,80,TCP,http,619,920,6,4,0.000434,
+30,3,20:27:31.245,user,10.10.20.54,60355,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN
+31,4,20:27:35.682,user,10.10.20.152,37242,10.10.10.163,80,TCP,http,619,920,6,4,0.000467,
+32,4,20:27:40.655,user,10.10.20.54,34568,10.10.10.163,80,TCP,http,619,1351,6,4,0.000535,
+33,4,20:27:44.637,user,10.10.20.252,37242,10.10.10.163,80,TCP,http,619,920,6,4,0.000608,
+34,4,20:27:49.609,user,10.10.20.152,37400,10.10.10.163,80,TCP,http,619,1351,6,4,0.000629,
+35,4,20:27:50.687,user,10.10.20.252,50456,203.0.113.33,80,TCP,http,66336,778,12,7,0.000212,
+36,4,20:27:54.586,user,10.10.20.54,50416,10.10.10.163,80,TCP,http,619,1351,6,4,0.000591,
+37,4,20:27:58.569,user,10.10.20.54,36346,10.10.10.163,80,TCP,http,619,1351,6,4,0.000445,
+38,4,20:28:03.544,user,10.10.20.152,43368,10.10.10.163,80,TCP,http,615,747,6,4,0.00022,
+39,4,20:28:07.617,user,10.10.20.54,46096,10.10.30.173,3306,TCP,flow,327,300,5,3,0.00029,
+40,4,20:28:12.518,user,10.10.20.252,34884,203.0.113.33,22,TCP,flow,370,0,5,0,4.109453,
