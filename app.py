@@ -1,6 +1,6 @@
 """Streamlit prototype: participant reviews an IDS table and gives an independent
 judgment, then discusses with a dummy LLM teammate before finalizing.
-Flow: consent -> (trial_initial -> trial_discuss -> feedback) x 6 -> done."""
+Flow: consent -> (trial_initial -> trial_discuss -> feedback) x 9 -> done."""
 from datetime import datetime
 from html import escape
 
@@ -304,7 +304,7 @@ elif st.session_state.page == "trial_discuss":
         for source in ("human", "llm"):
             for stage in ("pre", "post"):
                 record[f"{source}_attack_detection_correct_{stage}"] = int(
-                    record[f"{source}_attack_probability_{stage}"] > 50
+                    round_probability_to_decision(record[f"{source}_attack_probability_{stage}"]) == correct_attack_detected
                 )
                 chosen_type = record[f"{source}_attack_type_{stage}"]
                 if source == "human" and chosen_type == "Other":
@@ -368,10 +368,13 @@ elif st.session_state.page == "feedback":
         color = {2: "green", 1: "orange", 0: "red"}[team_score]
         outcome = {2: "Fully correct", 1: "Partially correct", 0: "Incorrect"}[team_score]
         st.subheader(f":{color}[{outcome} ({team_score}/2)]")
-        if record["team_attack_detection_correct"]:
-            detail = "Attack detected" if record["team_attack_type_correct"] else "Attack detected - incorrect attack type"
+        attack_present = trial["attack_detected_correct_response"] == "Yes"
+        if attack_present:
+            detail = "Attack detected" if record["team_attack_detection_correct"] else "Missed attack"
         else:
-            detail = "Missed attack - correct attack type" if record["team_attack_type_correct"] else "Missed attack - incorrect attack type"
+            detail = "Correctly identified benign activity" if record["team_attack_detection_correct"] else "False alarm"
+        if not record["team_attack_type_correct"]:
+            detail += " - incorrect attack type"
         st.write(detail)
 
         # Color the full team comparison by the combined score; truth stays green.
@@ -384,7 +387,7 @@ elif st.session_state.page == "feedback":
         team_detection = "Attack present" if summary["team_decision"] == "Yes" else "No attack"
         for column, label, detection, attack_type, text_color, bg_color in (
             (decision_col, "FINAL TEAM DECISION", team_detection, record["team_attack_type"], foreground, background),
-            (truth_col, "GROUND TRUTH", "Attack present", trial["attack_type_correct_response"], "#065f46", "#d1fae5"),
+            (truth_col, "GROUND TRUTH", "Attack present" if attack_present else "No attack", trial["attack_type_correct_response"], "#065f46", "#d1fae5"),
         ):
             with column:
                 st.html(
@@ -463,4 +466,4 @@ elif st.session_state.page == "feedback":
 
 elif st.session_state.page == "done":
     st.title(settings["experiment_name"])
-    st.success("All six episodes completed. Your responses and chat logs have been saved. Thank you!")
+    st.success(f"All {len(st.session_state.trial_order)} episodes completed. Your responses and chat logs have been saved. Thank you!")

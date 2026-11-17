@@ -7,7 +7,10 @@
     "exfil",
     "smb",
     "recon",
-    "dvwa"
+    "dvwa",
+    "benign_1",
+    "benign_2",
+    "benign_3"
   ],
   "prolific_id": null,
   "ids_table_default_rows": 10,
@@ -27,27 +30,48 @@
   "trials": {
     "dos": {
       "attack_type": "DoS",
-      "csv": "slice-dos-service-exhaustion.csv"
+      "csv": "attacks/slice-dos-service-exhaustion.csv",
+      "attack_present": true
     },
     "evasion": {
       "attack_type": "Evasion",
-      "csv": "slice-evasion-quiet-recon.csv"
+      "csv": "attacks/slice-evasion-quiet-recon.csv",
+      "attack_present": true
     },
     "exfil": {
       "attack_type": "Exfiltration",
-      "csv": "slice-exfil-staged-egress.csv"
+      "csv": "attacks/slice-exfil-staged-egress.csv",
+      "attack_present": true
     },
     "smb": {
       "attack_type": "SMB",
-      "csv": "slice-lateral-smb-propagation.csv"
+      "csv": "attacks/slice-lateral-smb-propagation.csv",
+      "attack_present": true
     },
     "recon": {
       "attack_type": "Recon",
-      "csv": "slice-recon-internal-discovery.csv"
+      "csv": "attacks/slice-recon-internal-discovery.csv",
+      "attack_present": true
     },
     "dvwa": {
       "attack_type": "DVWA",
-      "csv": "slice-web-dvwa-injection.csv"
+      "csv": "attacks/slice-web-dvwa-injection.csv",
+      "attack_present": true
+    },
+    "benign_1": {
+      "attack_type": "No attack",
+      "csv": "benign/slice-benign-office-1.csv",
+      "attack_present": false
+    },
+    "benign_2": {
+      "attack_type": "No attack",
+      "csv": "benign/slice-benign-office-2.csv",
+      "attack_present": false
+    },
+    "benign_3": {
+      "attack_type": "No attack",
+      "csv": "benign/slice-benign-office-3.csv",
+      "attack_present": false
     }
   }
 }

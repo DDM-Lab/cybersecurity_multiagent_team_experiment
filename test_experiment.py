@@ -13,8 +13,8 @@ class ExperimentTest(unittest.TestCase):
         for _ in range(20):
             order, ai=utils.create_trial_plan(settings)
             self.assertEqual(set(order),set(settings['trial_order']))
-            self.assertEqual(sum(a['attack_probability']>50 for a in ai.values()),3)
-            self.assertEqual(sum(a['attack_type']==settings['trials'][i]['attack_type'] for i,a in ai.items()),3)
+            self.assertIn(sum((a['attack_probability']>50)==settings['trials'][i]['attack_present'] for i,a in ai.items()),(4,5))
+            self.assertEqual(sum(a['attack_type']==settings['trials'][i]['attack_type'] for i,a in ai.items()), sum((a['attack_probability']>50)==settings['trials'][i]['attack_present'] for i,a in ai.items()))
         self.assertEqual(round_probability_to_decision(50),'No')
         self.assertEqual(round_probability_to_decision(51),'Yes')
         for i in settings['trial_order']:
@@ -27,6 +27,8 @@ class ExperimentTest(unittest.TestCase):
     def test_feedback_outcomes_and_sources(self):
         settings = utils.load_settings()
         order, assessments = utils.create_trial_plan(settings)
+        order.remove('dos')
+        order.insert(0, 'dos')
         record = {f"{source}_{measure}_correct_{stage}": 1
                   for source in ("human", "llm")
                   for measure in ("attack_detection", "attack_type")
@@ -38,7 +40,11 @@ class ExperimentTest(unittest.TestCase):
             ("pool", "tie_breaker", "human", "selected your judgment"),
             ("pool", "tie_breaker", "llm", "selected the AI teammate's judgment"),
         ]
-        for condition, chosen, selected, expected in cases:
+        for condition, chosen, selected, expected, scenario in (
+            (*case, scenario) for case in cases for scenario in ('dos', 'benign_1')
+        ):
+            order.remove(scenario)
+            order.insert(0, scenario)
             for detection_correct, type_correct in ((0, 0), (0, 1), (1, 0), (1, 1)):
                 correct = detection_correct
                 score = detection_correct + type_correct
@@ -58,10 +64,11 @@ class ExperimentTest(unittest.TestCase):
                 self.assertFalse(at.exception)
                 self.assertTrue(any(expected in element.value for element in at.markdown))
                 self.assertTrue(any(f"({score}/2)" in element.value for element in at.subheader))
-                self.assertTrue(any(("Attack detected" if correct else "Missed attack") in element.value
-                                    for element in at.markdown))
+                expected_outcome = (("Attack detected" if correct else "Missed attack") if scenario == 'dos'
+                                    else ("Correctly identified benign activity" if correct else "False alarm"))
+                self.assertTrue(any(expected_outcome in element.value for element in at.markdown))
 
-    def test_six_trial_flow(self):
+    def test_nine_episode_flow(self):
         with tempfile.TemporaryDirectory(dir='.') as tmp, patch.object(utils,'DATA_DIR',tmp):
             at=AppTest.from_file('app.py',default_timeout=15).run()
             self.assertFalse(at.exception)
@@ -110,21 +117,22 @@ class ExperimentTest(unittest.TestCase):
                 self.assertFalse(at.exception)
                 self.assertEqual(len(at.dataframe[-1].value),total)
                 self.assertIn('malicious',at.dataframe[-1].value.columns)
+                settings_for_trial=utils.load_settings()['trials'][trial_id]
                 record=at.session_state.feedback_record
                 source = record['team_selected_source']
                 self.assertEqual(record['team_score'], record[f'{source}_attack_detection_correct_post'] + record[f'{source}_attack_type_correct_post'])
-                self.assertEqual(record['human_attack_detection_correct_pre'],1)
-                self.assertEqual(record['human_attack_detection_correct_post'],0)
+                self.assertEqual(record['human_attack_detection_correct_pre'],int(settings_for_trial['attack_present']))
+                self.assertEqual(record['human_attack_detection_correct_post'],int(not settings_for_trial['attack_present']))
                 self.assertEqual(record['ids_rows_revealed'],total//10-1)
                 next(b for b in at.button if b.label in ('Next episode','Finish experiment')).click().run()
                 self.assertFalse(at.exception)
             self.assertEqual(at.session_state.page,'done')
             with open(Path(tmp)/'test_participant_answers.csv',newline='') as f:
                 records=list(csv.DictReader(f))
-            self.assertEqual(len(records),6)
-            self.assertEqual(len(set(r['trial_id'] for r in records)),6)
-            self.assertEqual(sum(int(r['llm_attack_detection_correct_pre']) for r in records),3)
-            self.assertEqual(sum(int(r['llm_attack_type_correct_pre']) for r in records),3)
+            self.assertEqual(len(records),9)
+            self.assertEqual(len(set(r['trial_id'] for r in records)),9)
+            self.assertIn(sum(int(r['llm_attack_detection_correct_pre']) for r in records),(4,5))
+            self.assertEqual(sum(int(r['llm_attack_type_correct_pre']) for r in records),sum(int(r['llm_attack_detection_correct_pre']) for r in records))
             with open(Path(tmp)/'test_participant_chat.csv',newline='') as f:
                 self.assertEqual(len(list(csv.DictReader(f))),2)
 

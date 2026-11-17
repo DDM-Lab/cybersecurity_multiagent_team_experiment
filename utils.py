@@ -24,7 +24,7 @@ def load_trial(trial_id):
     with open(path, newline="", encoding="utf-8") as f:
         events = list(csv.DictReader(f))
     return {"trial_id": trial_id, "ids_events": events,
-            "attack_detected_correct_response": "Yes",
+            "attack_detected_correct_response": "Yes" if config["attack_present"] else "No",
             "attack_type_correct_response": config["attack_type"]}
 
 
@@ -43,19 +43,24 @@ def get_next_condition():
 
 def create_trial_plan(settings):
     order = random.sample(settings["trial_order"], len(settings["trial_order"]))
-    correct_trials = set(random.sample(order, len(order) // 2))
+    correct_count = random.choice([len(order) // 2, (len(order) + 1) // 2])
+    correct_trials = set(random.sample(order, correct_count))
+    attack_types = [config["attack_type"] for config in settings["trials"].values()
+                    if config["attack_present"]]
     assessments = {}
     for trial_id in order:
-        correct_type = settings["trials"][trial_id]["attack_type"]
+        config = settings["trials"][trial_id]
         correct = trial_id in correct_trials
+        predicts_attack = config["attack_present"] if correct else not config["attack_present"]
+        predicted_type = (config["attack_type"] if correct else random.choice(attack_types)) if predicts_attack else "No attack"
         assessments[trial_id] = {
-            "attack_probability": 85 if correct else 30,
-            "attack_type": correct_type if correct else "No attack",
+            "attack_probability": 85 if predicts_attack else 30,
+            "attack_type": predicted_type,
             "confidence": 80,
             "explanation": (
-                f"Considering the full event log, I suspect {correct_type}. "
+                f"Considering the full event log, I suspect {predicted_type}. "
                 "The pattern of network activity suggests an ongoing attack."
-                if correct else
+                if predicts_attack else
                 "Considering the full event log, I interpret this activity as normal traffic. "
                 "I do not suspect an ongoing attack."
             ),

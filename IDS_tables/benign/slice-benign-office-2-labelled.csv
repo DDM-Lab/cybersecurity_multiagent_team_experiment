@@ -1,0 +1,81 @@
+row_id,block,ts,sensor,src_ip,src_port,dst_ip,dst_port,proto,app_proto,bytes_out,bytes_in,pkts_out,pkts_in,duration,info,malicious,attack_class,step_id
+1,1,19:32:22.025,wan,10.10.20.54,54222,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups
+2,1,19:32:24.992,wan,10.10.20.54,42795,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+3,1,19:32:28.381,wan,10.10.20.54,56369,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups
+4,1,19:32:31.340,wan,10.10.20.54,44435,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups
+5,1,19:32:34.303,wan,10.10.20.54,50122,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups
+6,1,19:32:37.679,wan,10.10.20.54,60482,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups
+7,1,19:32:40.640,wan,10.10.20.54,59749,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups
+8,1,19:32:40.641,wan,10.10.20.54,59749,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR,0,benign,dns-lookups
+9,1,19:32:41.063,wan,10.10.20.54,38882,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups
+10,1,19:32:41.063,wan,10.10.20.54,38882,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups
+11,2,19:32:41.486,wan,10.10.20.54,48923,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups
+12,2,19:32:41.486,wan,10.10.20.54,48923,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-lookups
+13,2,19:32:41.913,wan,10.10.20.54,48836,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups
+14,2,19:32:41.914,wan,10.10.20.54,48836,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups
+15,2,19:33:28.690,wan,10.10.20.152,40696,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups-ws2
+16,2,19:33:28.690,wan,10.10.20.152,40696,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+17,2,19:33:29.115,wan,10.10.20.152,59425,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-ws2
+18,2,19:33:29.115,wan,10.10.20.152,59425,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+19,2,19:33:29.542,wan,10.10.20.152,53889,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups-ws2
+20,2,19:33:29.542,wan,10.10.20.152,53889,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+21,3,19:33:29.961,wan,10.10.20.152,34729,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups-ws2
+22,3,19:33:29.961,wan,10.10.20.152,34729,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+23,3,19:33:30.386,wan,10.10.20.152,49303,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups-ws2
+24,3,19:33:33.345,wan,10.10.20.152,40201,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+25,3,19:33:36.707,wan,10.10.20.152,56274,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups-ws2
+26,3,19:33:39.658,wan,10.10.20.152,44513,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups-ws2
+27,3,19:33:42.615,wan,10.10.20.152,43842,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+28,3,19:33:44.734,wan,10.10.20.152,51745,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-lookups-ws2
+29,3,19:33:45.157,wan,10.10.20.152,39599,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups-ws2
+30,3,19:33:45.157,wan,10.10.20.152,39599,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-ws2
+31,4,19:34:07.242,wan,10.10.20.252,52511,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups-host3
+32,4,19:34:07.242,wan,10.10.20.252,52511,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+33,4,19:34:07.661,wan,10.10.20.252,34259,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+34,4,19:34:07.661,wan,10.10.20.252,34259,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+35,4,19:34:08.070,wan,10.10.20.252,42731,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups-host3
+36,4,19:34:10.574,wan,10.10.20.252,33489,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+37,4,19:34:13.914,wan,10.10.20.252,37848,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-lookups-host3
+38,4,19:34:16.816,wan,10.10.20.252,60353,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-host3
+39,4,19:34:20.126,wan,10.10.20.252,35095,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups-host3
+40,4,19:34:22.613,wan,10.10.20.252,36046,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab,0,benign,dns-lookups-host3
+41,5,19:34:22.613,wan,10.10.20.252,36046,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+42,5,19:34:23.020,wan,10.10.20.252,57386,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-lookups-host3
+43,5,19:34:23.020,wan,10.10.20.252,57386,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-lookups-host3
+44,5,19:34:23.434,wan,10.10.20.252,48508,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-lookups-host3
+45,5,19:34:23.434,wan,10.10.20.252,48508,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-lookups-host3
+46,5,19:35:01.375,wan,203.0.113.58,33254,10.10.10.163,80,TCP,http,,,,,,/,0,benign,browse-external
+47,5,19:35:01.378,wan,203.0.113.58,33262,10.10.10.163,80,TCP,http,,,,,,/index.php,0,benign,browse-external
+48,5,19:35:01.381,wan,203.0.113.58,33274,10.10.10.163,80,TCP,http,,,,,,/about,0,benign,browse-external
+49,5,19:35:01.384,wan,203.0.113.58,33286,10.10.10.163,80,TCP,http,,,,,,/login.php,0,benign,browse-external
+50,5,19:35:01.387,wan,203.0.113.58,33294,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-external
+51,6,19:35:05.306,wan,203.0.113.58,33302,10.10.10.163,80,TCP,http,,,,,,/,0,benign,browse-external
+52,6,19:35:05.311,wan,203.0.113.58,33310,10.10.10.163,80,TCP,http,,,,,,/index.php,0,benign,browse-external
+53,6,19:35:05.316,wan,203.0.113.58,33314,10.10.10.163,80,TCP,http,,,,,,/about,0,benign,browse-external
+54,6,19:35:07.596,wan,203.0.113.58,33340,10.10.10.163,80,TCP,http,,,,,,/,0,benign,browse-external
+55,6,19:35:09.466,wan,203.0.113.58,33430,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-external
+56,6,19:35:11.511,wan,203.0.113.58,47090,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-external
+57,6,19:35:14.851,wan,203.0.113.58,47126,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-external
+58,6,19:35:18.251,wan,203.0.113.58,47160,10.10.10.163,80,TCP,http,,,,,,/static/style.css,0,benign,browse-external
+59,6,19:35:23.616,wan,203.0.113.58,55241,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-external
+60,6,19:35:25.273,wan,203.0.113.58,50698,203.0.113.33,53,UDP,dns,,,,,,A www.corp.lab,0,benign,dns-external
+61,7,19:35:28.199,wan,203.0.113.58,41203,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-external
+62,7,19:35:31.114,wan,203.0.113.58,38881,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-external
+63,7,19:35:34.456,wan,203.0.113.58,47754,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-external
+64,7,19:35:37.360,wan,203.0.113.58,59441,203.0.113.33,53,UDP,dns,,,,,,A mail.corp.lab -> NOERROR,0,benign,dns-external
+65,7,19:35:39.450,wan,203.0.113.58,42388,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab,0,benign,dns-external
+66,7,19:35:39.450,wan,203.0.113.58,42388,203.0.113.33,53,UDP,dns,,,,,,A intranet.corp.lab -> NOERROR,0,benign,dns-external
+67,7,19:35:39.859,wan,203.0.113.58,45719,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab,0,benign,dns-external
+68,7,19:35:39.859,wan,203.0.113.58,45719,203.0.113.33,53,UDP,dns,,,,,,A updates.corp.lab -> NXDOMAIN,0,benign,dns-external
+69,7,19:36:06.251,wan,203.0.113.58,33314,10.10.10.163,80,TCP,http,615,747,6,4,0.000304,,0,benign,browse-external
+70,7,19:36:06.252,wan,203.0.113.58,33302,10.10.10.163,80,TCP,http,610,920,6,4,0.000887,,0,benign,browse-external
+71,8,19:36:06.252,wan,203.0.113.58,33310,10.10.10.163,80,TCP,http,619,920,6,4,0.000456,,0,benign,browse-external
+72,8,19:36:06.252,wan,203.0.113.58,33286,10.10.10.163,80,TCP,http,619,1351,6,4,0.000571,,0,benign,browse-external
+73,8,19:36:06.253,wan,203.0.113.58,33254,10.10.10.163,80,TCP,http,610,920,6,4,0.000669,,0,benign,browse-external
+74,8,19:36:09.239,wan,203.0.113.58,33274,10.10.10.163,80,TCP,http,615,747,6,4,0.000339,,0,benign,browse-external
+75,8,19:36:11.234,wan,203.0.113.58,33262,10.10.10.163,80,TCP,http,619,920,6,4,0.000332,,0,benign,browse-external
+76,8,19:36:15.215,wan,203.0.113.58,33394,10.10.10.163,80,TCP,http,619,920,6,4,0.00082,,0,benign,browse-external
+77,8,19:36:18.205,wan,203.0.113.58,47104,10.10.10.163,80,TCP,http,615,747,6,4,0.000407,,0,benign,browse-external
+78,8,19:36:21.190,wan,203.0.113.58,47152,10.10.10.163,80,TCP,http,619,1351,6,4,0.000649,,0,benign,browse-external
+79,8,19:36:24.175,wan,203.0.113.58,47174,10.10.10.163,80,TCP,http,610,920,6,4,0.001708,,0,benign,browse-external
+80,8,19:36:27.163,wan,203.0.113.58,47198,10.10.10.163,80,TCP,http,619,1351,6,4,0.000529,,0,benign,browse-external
