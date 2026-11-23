@@ -105,6 +105,24 @@ ATTACK_CATEGORIES = (
 )
 
 
+def human_only_assessment(human_decision, human_category):
+    """Team result when the AI teammate gave no assessment at all: the human's answers
+    stand. Same keys as aggregate_assessment, with the pooling values left blank."""
+    return {
+        "team_decision": human_decision,
+        "team_attack_type": human_category,
+        "team_detection_source": "human",
+        "team_category_source": "human",
+        "team_tie_selected_source": "",
+        "team_detection_tie_break": False,
+        "team_category_tie_break": False,
+        "pool_human_coefficient": "",
+        "pool_llm_coefficient": "",
+        "pool_detection_evidence": "",
+        "pool_category_support": {},
+    }
+
+
 def aggregate_assessment(condition, human_decision, human_category, human_detection_confidence,
                          llm_decision, llm_category, llm_detection_confidence,
                          human_category_confidence, llm_category_confidence):

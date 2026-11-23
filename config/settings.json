@@ -15,6 +15,26 @@
   "prolific_id": null,
   "ids_table_default_rows": 10,
   "ids_table_rows_increment": 10,
+  "llm": {
+    "endpoint": "http://127.0.0.1:8080/v1/chat/completions",
+    "max_tokens": 4096,
+    "default_fidelity": "high_fidelity",
+    "show_fidelity_toggle": true,
+    "timeout_seconds": 300,
+    "turn_end_markers": [
+      "participant:",
+      "you:",
+      "user:",
+      "assistant:",
+      "ai teammate:",
+      "discussion:",
+      "phase 1:",
+      "phase 2:",
+      "phase 3:",
+      "(not shown to the participant",
+      "(word count"
+    ]
+  },
   "attack_type_options": [
     "None",
     "DoS",

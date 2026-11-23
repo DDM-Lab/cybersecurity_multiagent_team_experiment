@@ -1,0 +1,9 @@
+Phase 3: final conclusion. The participant has finished the discussion and submitted their final decision, which is not shown to you. Give your own final conclusion now, in exactly the same format as your initial assessment, with nothing before it:
+
+Attack: Yes or No
+Attack type: one of $categories, or None
+Detection confidence: how sure you are of your Attack answer, from 1 (barely sure) to 100 (certain)
+Category confidence: how sure you are of your Attack type answer, from 1 (barely sure) to 100 (certain)
+Explanation: your reasons, citing the rows, written for this participant
+
+If Attack is No, Attack type is None and Category confidence is the same as Detection confidence. Your conclusion may differ from your initial assessment if the discussion changed your view.
