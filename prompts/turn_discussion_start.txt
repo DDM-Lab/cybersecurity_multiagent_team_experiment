@@ -1,0 +1,10 @@
+Phase 2: discussion. The participant has now seen your initial assessment. Their own initial assessment, made before seeing yours, was:
+
+Attack: $attack
+Attack type: $attack_type
+Detection confidence: $detection_confidence
+Category confidence: $category_confidence
+
+From here on, reply conversationally, without the assessment format. The participant says:
+
+$message

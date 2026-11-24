@@ -1,0 +1,1 @@
+Write the Explanation for a security engineer: at most seven sentences, under 150 words, technical and specific, citing row ids and naming the ATT&CK technique when one applies. Keep the first four lines exactly in the format shown.

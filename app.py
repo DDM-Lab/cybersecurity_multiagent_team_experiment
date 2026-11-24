@@ -1,6 +1,9 @@
 """Streamlit prototype: participant reviews an IDS table and gives an independent
-judgment, then discusses with a dummy LLM teammate before finalizing.
+judgment, then discusses with an LLM teammate (Foundation-Sec-8B-Reasoning) before
+finalizing. The model makes its own initial and final assessment of each table, in a
+fresh conversation per episode (see llm.py and prompts/).
 Flow: consent -> (trial_initial -> trial_discuss -> feedback) x 9 -> done."""
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import json
 from html import escape
@@ -8,14 +11,15 @@ from html import escape
 import pandas as pd
 import streamlit as st
 
+import llm
 from decision import (
     aggregate_assessment,
     calculate_team_performance,
+    human_only_assessment,
 )
 from utils import (
     create_trial_plan,
     load_labeled_table,
-    get_dummy_llm_reply,
     get_next_condition,
     load_settings,
     load_trial,
@@ -29,6 +33,11 @@ settings = load_settings()
 attack_type_options = settings["attack_type_options"]
 ids_default_rows = settings["ids_table_default_rows"]
 ids_rows_increment = settings["ids_table_rows_increment"]
+llm_config = llm.config(settings)
+
+# Kept outside the widget's own key: Streamlit discards a widget's state on pages where
+# the widget is not drawn, and the choice has to survive from one episode to the next.
+st.session_state.setdefault("fidelity", llm_config["default_fidelity"])
 
 if "page" not in st.session_state:
     st.session_state.update(
@@ -43,13 +52,48 @@ if "trial_order" in st.session_state:
     trial_id = st.session_state.trial_order[st.session_state.trial_index]
     trial = load_trial(trial_id)
     trial["trial_number"] = st.session_state.trial_index + 1
-    trial["llm_initial_assessment"] = st.session_state.llm_assessments[trial_id]
     ids_total_rows = len(trial["ids_events"])
     st.caption(f"Episode {trial['trial_number']} of {len(st.session_state.trial_order)}")
 
 
 def now():
     return datetime.now().isoformat(timespec="seconds")
+
+
+@st.cache_resource
+def llm_executor():
+    """Shared by all sessions. Workers only talk to the model and never call st.*."""
+    return ThreadPoolExecutor(max_workers=4, thread_name_prefix="llm")
+
+
+def current_episode():
+    """This table's conversation with the model, started on first sight of the table.
+
+    A new table always gets a new session, so nothing from one episode reaches the
+    model in the next. The initial assessment starts at once in the background and is
+    usually ready by the time the participant has made their own judgment.
+    """
+    episode = st.session_state.get("episode")
+    if episode is None or episode["trial_id"] != trial["trial_id"]:
+        session = llm.EpisodeSession(settings, trial, st.session_state.participant_id)
+        episode = {
+            "trial_id": trial["trial_id"],
+            "session": session,
+            "future": llm_executor().submit(session.initial, st.session_state.fidelity),
+        }
+        st.session_state.episode = episode
+    return episode
+
+
+def initial_assessment(episode):
+    future = episode["future"]
+    if not future.done():
+        with st.spinner("Your AI teammate is finishing its assessment..."):
+            future.result()
+    try:
+        return future.result()
+    except Exception as exc:  # a bug must not end the participant's session
+        return llm.failed_assessment(f"{type(exc).__name__}: {exc}")
 
 
 def match_color(is_match):
@@ -97,9 +141,7 @@ if st.session_state.page == "consent":
         else:
             st.session_state.participant_id = participant_id.strip()
             st.session_state.condition = get_next_condition()
-            order, assessments = create_trial_plan(settings)
-            st.session_state.trial_order = order
-            st.session_state.llm_assessments = assessments
+            st.session_state.trial_order = create_trial_plan(settings)
             st.session_state.timestamp_start = now()
             st.session_state.chat_history = []
             st.session_state.page = "trial_initial"
@@ -107,6 +149,7 @@ if st.session_state.page == "consent":
 
 # --------------------------------------------------------- trial: initial page
 elif st.session_state.page == "trial_initial":
+    current_episode()  # the model starts on this table now, in the background
     st.title(settings["experiment_name"])
     st.subheader("Network Event Log (IDS Output)")
     render_ids_table()
@@ -161,7 +204,9 @@ elif st.session_state.page == "trial_discuss":
     render_ids_table()
 
     pre = st.session_state.pre_answers
-    llm_assessment = trial["llm_initial_assessment"]
+    episode = current_episode()
+    llm_assessment = initial_assessment(episode)
+    llm_available = llm_assessment["status"] == "ok"
     human_decision_pre = pre["attack_detected"]
     llm_decision_pre = llm_assessment["attack_detected"]
 
@@ -188,26 +233,42 @@ elif st.session_state.page == "trial_discuss":
         )
 
     with llm_column:
-        st.markdown(
-            f"""
-<div style="background-color:#e8f0fe;border:1px solid #1a73e8;border-radius:8px;padding:14px;">
-<b>LLM Teammate Assessment</b><br>
+        if llm_available:
+            # The explanation is model output inside raw HTML, so it is escaped.
+            explanation = escape(llm_assessment["explanation"]).replace("\n", "<br>")
+            card = f"""
 {colored_line(f"Ongoing attack: {llm_assessment['attack_detected']}", decision_match)}<br>
 {colored_line(f"Suspected attack type: {llm_assessment['attack_type']}", type_match)}<br>
 {colored_line(f"Detection confidence: {llm_assessment['detection_confidence']}/100", confidence_match)}<br>
 {colored_line(f"Category confidence: {llm_assessment['category_confidence']}/100", category_confidence_match)}<br>
-{llm_assessment['explanation']}
+{explanation}"""
+        else:
+            card = ("Your AI teammate could not give an assessment for this table. "
+                    "Your own answers will decide this episode.")
+        st.markdown(
+            f"""
+<div style="background-color:#e8f0fe;border:1px solid #1a73e8;border-radius:8px;padding:14px;">
+<b>LLM Teammate Assessment</b><br>
+{card}
 </div>
 """,
             unsafe_allow_html=True,
         )
 
     st.subheader("Discuss With Your LLM Teammate")
+    if llm_config["show_fidelity_toggle"]:
+        options = list(llm.FIDELITY_LABELS)
+        st.session_state.fidelity = st.radio(
+            "Teammate response style", options,
+            index=options.index(st.session_state.fidelity),
+            format_func=llm.FIDELITY_LABELS.get, horizontal=True, key="fidelity_toggle",
+        )
     # Nesting inside a column (rather than at page root) keeps chat_input statically
     # placed right below the message box instead of pinned to the viewport bottom.
     chat_col = st.columns(1)[0]
     with chat_col:
-        with st.container(height=350):
+        chat_box = st.container(height=350)
+        with chat_box:
             for msg in st.session_state.chat_history:
                 role = "assistant" if msg["role"] == "llm" else "user"
                 author = "LLM Teammate" if msg["role"] == "llm" else "You"
@@ -215,15 +276,21 @@ elif st.session_state.page == "trial_discuss":
                     st.caption(f"{author} | {msg['timestamp']}")
                     st.markdown(msg["message"])
 
-        user_message = st.chat_input("Discuss your assessments with your LLM teammate...")
-    if user_message:
+        user_message = st.chat_input("Discuss your assessments with your LLM teammate...",
+                                     disabled=not llm_available)
+    if user_message and llm_available:
         st.session_state.chat_history.append(
             {"role": "human", "message": user_message, "timestamp": now()}
         )
-        reply = get_dummy_llm_reply(trial, user_message)
-        st.session_state.chat_history.append(
-            {"role": "llm", "message": reply, "timestamp": now()}
-        )
+        # Show the participant's message straight away. The reply takes a while: the
+        # model reasons before it answers.
+        with chat_box:
+            with st.chat_message("user"):
+                st.caption(f"You | {st.session_state.chat_history[-1]['timestamp']}")
+                st.markdown(user_message)
+            with st.chat_message("assistant"), st.spinner("Your teammate is thinking..."):
+                reply = episode["session"].chat(user_message, pre, st.session_state.fidelity)
+        st.session_state.chat_history.append({"role": "llm", **reply, "timestamp": now()})
         st.rerun()
 
     st.subheader("Finalize Your Assessment")
@@ -261,28 +328,47 @@ elif st.session_state.page == "trial_discuss":
             st.stop()
         human_decision_post = attack_detected_post
 
+        # The model's own final conclusion. It is not told the participant's final
+        # answer, so the two final judgments stay independent for pooling.
+        if llm_available:
+            with st.spinner("Your AI teammate is making its final call..."):
+                llm_final = episode["session"].final(st.session_state.fidelity)
+        else:
+            llm_final = llm.failed_assessment("no initial assessment")
+        # Which assessment stands for the model's final answer. If the final call fails,
+        # the initial one is used and the record says so.
+        if llm_final["status"] == "ok":
+            llm_post, llm_post_source = llm_final, "final"
+        elif llm_available:
+            llm_post, llm_post_source = llm_assessment, "initial"
+        else:
+            llm_post, llm_post_source = llm_final, "unavailable"
+
         llm_attack_type_pre = llm_assessment["attack_type"]
         llm_detection_confidence_pre = llm_assessment["detection_confidence"]
-        # Dummy LLM teammate does not update its assessment after chat (no real LLM yet).
-        llm_attack_type_post = llm_attack_type_pre
-        llm_detection_confidence_post = llm_detection_confidence_pre
-        llm_decision_post = llm_decision_pre
+        llm_attack_type_post = llm_post["attack_type"]
+        llm_detection_confidence_post = llm_post["detection_confidence"]
+        llm_decision_post = llm_post["attack_detected"]
 
         correct_attack_detected = trial.get("attack_detected_correct_response", "Yes")
         correct_attack_type = trial.get("attack_type_correct_response", "")
 
-        # Decision calculation based on condition, using final (post-chat) answers
-        agg_result = aggregate_assessment(
-            condition=st.session_state.condition,
-            human_decision=human_decision_post,
-            human_category=attack_type_post,
-            human_detection_confidence=detection_confidence_post,
-            human_category_confidence=category_confidence_post,
-            llm_decision=llm_decision_post,
-            llm_category=llm_attack_type_post,
-            llm_detection_confidence=llm_detection_confidence_post,
-            llm_category_confidence=llm_assessment["category_confidence"],
-        )
+        # Decision calculation based on condition, using final (post-chat) answers.
+        # Without any answer from the model, the participant's answers stand.
+        if llm_post_source == "unavailable":
+            agg_result = human_only_assessment(human_decision_post, attack_type_post)
+        else:
+            agg_result = aggregate_assessment(
+                condition=st.session_state.condition,
+                human_decision=human_decision_post,
+                human_category=attack_type_post,
+                human_detection_confidence=detection_confidence_post,
+                human_category_confidence=category_confidence_post,
+                llm_decision=llm_decision_post,
+                llm_category=llm_attack_type_post,
+                llm_detection_confidence=llm_detection_confidence_post,
+                llm_category_confidence=llm_post["category_confidence"],
+            )
         team_decision = agg_result["team_decision"]
         team_perf = calculate_team_performance(team_decision, correct_attack_detected)
 
@@ -316,8 +402,8 @@ elif st.session_state.page == "trial_discuss":
             "llm_detection_confidence_post": llm_detection_confidence_post,
             "llm_detection_confidence_changed": llm_detection_confidence_pre != llm_detection_confidence_post,
             "llm_category_confidence_pre": llm_assessment["category_confidence"],
-            "llm_category_confidence_post": llm_assessment["category_confidence"],
-            "llm_category_confidence_changed": False,
+            "llm_category_confidence_post": llm_post["category_confidence"],
+            "llm_category_confidence_changed": llm_assessment["category_confidence"] != llm_post["category_confidence"],
             "llm_attack_detected_pre": llm_decision_pre,
             "llm_attack_detected_post": llm_decision_post,
             "llm_attack_detected_changed": llm_decision_pre != llm_decision_post,
@@ -326,7 +412,24 @@ elif st.session_state.page == "trial_discuss":
             "ids_rows_visible": st.session_state.ids_rows_visible,
             "ids_rows_revealed": st.session_state.ids_rows_revealed,
             "team_performance": team_perf,
+            "llm_fidelity_at_submit": st.session_state.fidelity,
+            "llm_chat_replies": sum(m["role"] == "llm" for m in st.session_state.chat_history),
+            # Where the model's post answers came from: its final call, its initial
+            # assessment when the final call failed, or nowhere.
+            "llm_post_source": llm_post_source,
+            "llm_prompt_sha256": json.dumps(episode["session"].prompt_hashes(), sort_keys=True),
         }
+        for stage, result in (("pre", llm_assessment), ("post", llm_final)):
+            record.update({
+                f"llm_assessment_status_{stage}": result["status"],
+                f"llm_attempts_{stage}": result["attempts"],
+                f"llm_explanation_{stage}": result["explanation"],
+                f"llm_raw_{stage}": result["raw_message"],
+                f"llm_cut_text_{stage}": result["cut_text"],
+                f"llm_fidelity_{stage}": result["fidelity"],
+                f"llm_seed_{stage}": result["seed"],
+                f"llm_error_{stage}": result["error"],
+            })
         for source in ("human", "llm"):
             for stage in ("pre", "post"):
                 record[f"{source}_attack_detection_correct_{stage}"] = int(
@@ -340,7 +443,10 @@ elif st.session_state.page == "trial_discuss":
         record.update({key: value for key, value in agg_result.items()
                        if key.startswith("pool_") or key.startswith("team_")})
         record["pool_category_support"] = json.dumps(record["pool_category_support"], sort_keys=True)
-        record["aggregation_method"] = "equal_weight_task_confidence_v2" if st.session_state.condition == "pool" else "human_leader"
+        if llm_post_source == "unavailable":
+            record["aggregation_method"] = "human_only_llm_unavailable"
+        else:
+            record["aggregation_method"] = "equal_weight_task_confidence_v2" if st.session_state.condition == "pool" else "human_leader"
         record.update(
             team_decision=team_decision,
             team_attack_type=team_attack_type,
@@ -420,7 +526,9 @@ elif st.session_state.page == "feedback":
                     f'<div>Attack type: {escape(attack_type)}</div></div>'
                 )
         st.divider()
-        if summary["condition"] == "leader":
+        if record.get("llm_post_source") == "unavailable":
+            st.markdown("**Your AI teammate was unavailable, so your final judgment determined the team decision.**")
+        elif summary["condition"] == "leader":
             st.markdown("**Your final judgment determined the team decision.**")
         else:
             for label, task in (("Attack detection", "detection"), ("Attack category", "category")):
@@ -441,8 +549,13 @@ elif st.session_state.page == "feedback":
         ("Attack detection", "Initial"), ("Attack detection", "Final"),
         ("Attack type", "Initial"), ("Attack type", "Final"),
     ])
+    def score_label(source, measure, stage):
+        if source == "llm" and record.get(f"llm_attack_detected_{stage}", "x") == "":
+            return "Unavailable"  # the model gave no assessment at this stage
+        return "Correct" if record[f"{source}_{measure}_correct_{stage}"] else "Incorrect"
+
     scores = pd.DataFrame([
-        ["Correct" if record[f"{source}_{measure}_correct_{stage}"] else "Incorrect"
+        [score_label(source, measure, stage)
          for measure in ("attack_detection", "attack_type") for stage in ("pre", "post")]
         for source in ("human", "llm")
     ], index=pd.Index(["You", "AI teammate"], name="Teammate"), columns=score_columns)
@@ -480,6 +593,8 @@ elif st.session_state.page == "feedback":
         else:
             st.session_state.trial_index += 1
             st.session_state.chat_history = []
+            # The next table starts a fresh conversation with the model.
+            st.session_state.pop("episode", None)
             st.session_state.pre_answers = None
             st.session_state.submission_summary = None
             st.session_state.timestamp_start = now()
